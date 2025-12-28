@@ -49,7 +49,7 @@ $packages = @(
     @{Name="crystaldiskmark.portable"; Description="CrystalDiskMark - SSD/HDD benchmark tool"; Selected=$true},
 
     # Overclocking Utilities
-    @{Name="msiafterburner"; Description="MSI Afterburner - GPU overclocking & monitoring"; Selected=$true}
+    # NOTE: MSI Afterburner removed by request (rarely used / causes CDN issues)
 )
 
 $currentIndex = 0
@@ -263,6 +263,76 @@ function Uninstall-TestMem5 {
     Write-Host ""
 }
 
+# Shortcut helpers: create/remove desktop shortcuts for installed packages
+$shortcutCandidates = {
+    'hwinfo' = @('hwinfo.exe','HWiNFO64.EXE')
+    'cpu-z.portable' = @('cpuz.exe','CPU-Z.exe')
+    'gpu-z' = @('GPU-Z.exe','gpuz.exe')
+    'prime95.portable' = @('prime95.exe')
+    'cinebench' = @('Cinebench.exe')
+    'crystaldiskmark.portable' = @('CrystalDiskMark.exe','diskmark32.exe','diskmark64.exe')
+    'occt' = @('occt.exe')
+    'furmark' = @('FurMark.exe','FurMark64.exe')
+}
+
+function Get-ShortcutDisplayName($pkgName) {
+    switch ($pkgName) {
+        'cpu-z.portable' { return 'CPU-Z' }
+        'hwinfo' { return 'HWiNFO' }
+        'gpu-z' { return 'GPU-Z' }
+        'prime95.portable' { return 'Prime95' }
+        'cinebench' { return 'Cinebench' }
+        'crystaldiskmark.portable' { return 'CrystalDiskMark' }
+        'occt' { return 'OCCT' }
+        'furmark' { return 'FurMark' }
+        default { return $pkgName }
+    }
+}
+
+function Create-DesktopShortcutForPackage($pkgName) {
+    $desktopPath = [Environment]::GetFolderPath('Desktop')
+    $displayName = Get-ShortcutDisplayName $pkgName
+    $shortcutPath = Join-Path $desktopPath "$displayName.lnk"
+
+    $candidates = @()
+    if ($shortcutCandidates.ContainsKey($pkgName)) { $candidates = $shortcutCandidates[$pkgName] }
+
+    # Search common locations for candidate executables
+    foreach ($cand in $candidates) {
+        $pathsToCheck = @(
+            Join-Path 'C:\ProgramData\chocolatey\bin' $cand,
+            Join-Path (Join-Path 'C:\ProgramData\chocolatey\lib' $pkgName) (Join-Path 'tools' $cand),
+            Join-Path (Join-Path $env:ProgramFiles $displayName) $cand,
+            Join-Path (Join-Path $env:'ProgramFiles(x86)' $displayName) $cand
+        )
+
+        foreach ($p in $pathsToCheck) {
+            if (Test-Path $p) {
+                $WScriptShell = New-Object -ComObject WScript.Shell
+                $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
+                $shortcut.TargetPath = $p
+                $shortcut.WorkingDirectory = Split-Path $p
+                $shortcut.Description = "$displayName - launched by installer"
+                $shortcut.Save()
+                Write-Host "  Desktop shortcut created: $shortcutPath" -ForegroundColor Green
+                return
+            }
+        }
+    }
+
+    Write-Host "  Could not locate executable for $pkgName to create desktop shortcut" -ForegroundColor Yellow
+}
+
+function Remove-DesktopShortcutForPackage($pkgName) {
+    $displayName = Get-ShortcutDisplayName $pkgName
+    $desktopPath = [Environment]::GetFolderPath('Desktop')
+    $shortcutPath = Join-Path $desktopPath "$displayName.lnk"
+    if (Test-Path $shortcutPath) {
+        Remove-Item $shortcutPath -Force -ErrorAction SilentlyContinue
+        Write-Host "  Desktop shortcut removed: $shortcutPath" -ForegroundColor Green
+    }
+}
+
 # Install or Uninstall each selected package
 foreach ($pkg in $selectedPackages) {
     if ($pkg.CustomInstall -and $pkg.Name -eq "testmem5") {
@@ -276,8 +346,12 @@ foreach ($pkg in $selectedPackages) {
         Write-Host "$action $($pkg.Name)..." -ForegroundColor Cyan
         if ($isUninstallMode) {
             choco uninstall $pkg.Name -y
+            # remove desktop shortcut if we created one
+            Remove-DesktopShortcutForPackage $pkg.Name
         } else {
             choco install $pkg.Name -y
+            # attempt to create a desktop shortcut for the package
+            Create-DesktopShortcutForPackage $pkg.Name
         }
         Write-Host ""
     }
