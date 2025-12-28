@@ -22,6 +22,7 @@ $packages = @(
     @{Name="occt"; Description="OCCT - CPU/GPU/RAM stability testing"; Selected=$true},
     @{Name="furmark"; Description="FurMark - GPU stress test & burn-in"; Selected=$true},
     @{Name="cinebench"; Description="Cinebench - CPU rendering benchmark"; Selected=$true},
+    @{Name="testmem5"; Description="TestMem5 - RAM stability testing (custom install)"; Selected=$true; CustomInstall=$true},
 
     # Storage Benchmarks
     @{Name="crystaldiskmark.portable"; Description="CrystalDiskMark - SSD/HDD benchmark tool"; Selected=$true},
@@ -141,11 +142,75 @@ Write-Host ""
 Write-Host "Installing selected packages..." -ForegroundColor Yellow
 Write-Host ""
 
+# Function to install TestMem5
+function Install-TestMem5 {
+    Write-Host "Installing TestMem5 (custom install)..." -ForegroundColor Cyan
+
+    # Ensure 7zip is installed
+    if (!(Get-Command 7z -ErrorAction SilentlyContinue)) {
+        Write-Host "  Installing 7zip (required for extraction)..." -ForegroundColor Yellow
+        choco install 7zip.install -y
+        # Refresh PATH
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    }
+
+    $downloadUrl = "https://github.com/CoolCmd/TestMem5/releases/download/v0.13.1/TestMem5.7z"
+    $appDataPath = [Environment]::GetFolderPath("ApplicationData")
+    $installPath = Join-Path $appDataPath "TestMem5"
+    $downloadFile = Join-Path $env:TEMP "TestMem5.7z"
+
+    try {
+        # Download TestMem5
+        Write-Host "  Downloading TestMem5..." -ForegroundColor Yellow
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadFile -UseBasicParsing
+
+        # Create installation directory
+        if (!(Test-Path $installPath)) {
+            New-Item -ItemType Directory -Path $installPath -Force | Out-Null
+        }
+
+        # Extract with 7zip
+        Write-Host "  Extracting TestMem5..." -ForegroundColor Yellow
+        & 7z x "$downloadFile" -o"$installPath" -y | Out-Null
+
+        # Create desktop shortcut
+        $desktopPath = [Environment]::GetFolderPath("Desktop")
+        $exePath = Join-Path $installPath "TM5.exe"
+
+        if (Test-Path $exePath) {
+            $shortcutPath = Join-Path $desktopPath "TestMem5.lnk"
+            $WScriptShell = New-Object -ComObject WScript.Shell
+            $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
+            $shortcut.TargetPath = $exePath
+            $shortcut.WorkingDirectory = $installPath
+            $shortcut.Description = "TestMem5 - RAM Stability Testing"
+            $shortcut.Save()
+
+            Write-Host "  TestMem5 installed to: $installPath" -ForegroundColor Green
+            Write-Host "  Desktop shortcut created!" -ForegroundColor Green
+        } else {
+            Write-Host "  Warning: TM5.exe not found after extraction" -ForegroundColor Red
+        }
+
+        # Cleanup
+        Remove-Item $downloadFile -Force -ErrorAction SilentlyContinue
+
+    } catch {
+        Write-Host "  Error installing TestMem5: $_" -ForegroundColor Red
+    }
+
+    Write-Host ""
+}
+
 # Install each selected package
 foreach ($pkg in $selectedPackages) {
-    Write-Host "Installing $($pkg.Name)..." -ForegroundColor Cyan
-    choco install $pkg.Name -y
-    Write-Host ""
+    if ($pkg.CustomInstall -and $pkg.Name -eq "testmem5") {
+        Install-TestMem5
+    } else {
+        Write-Host "Installing $($pkg.Name)..." -ForegroundColor Cyan
+        choco install $pkg.Name -y
+        Write-Host ""
+    }
 }
 
 Write-Host "========================================" -ForegroundColor Green
