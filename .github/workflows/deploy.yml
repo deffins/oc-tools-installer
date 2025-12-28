@@ -21,6 +21,8 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          port: 21  # Default FTP port. Change to 990 for FTPS or your custom port
+          protocol: ftp  # Options: ftp, ftps, ftps-legacy
           server-dir: /public_html/oc-tools/
           local-dir: ./
           exclude: |
@@ -28,3 +30,7 @@ jobs:
             **/.git*/**
             **/node_modules/**
             .github/**
+            **/*.md
+            !README.md
+            install-script-notes.txt
+            .ftp-deploy-sync-state.json
