@@ -46,7 +46,7 @@ $packages = @(
     @{Name="testmem5"; Description="TestMem5 - RAM stability testing (custom install)"; Selected=$true; CustomInstall=$true},
 
     # Storage Benchmarks
-    @{Name="crystaldiskmark.portable"; Description="CrystalDiskMark - SSD/HDD benchmark tool"; Selected=$true},
+    @{Name="crystaldiskmark.portable"; Description="CrystalDiskMark - SSD/HDD benchmark tool"; Selected=$true}
 
     # Overclocking Utilities
     # NOTE: MSI Afterburner removed by request (rarely used / causes CDN issues)
@@ -264,15 +264,15 @@ function Uninstall-TestMem5 {
 }
 
 # Shortcut helpers: create/remove desktop shortcuts for installed packages
-$shortcutCandidates = {
-    'hwinfo' = @('hwinfo.exe','HWiNFO64.EXE')
-    'cpu-z.portable' = @('cpuz.exe','CPU-Z.exe')
-    'gpu-z' = @('GPU-Z.exe','gpuz.exe')
-    'prime95.portable' = @('prime95.exe')
-    'cinebench' = @('Cinebench.exe')
-    'crystaldiskmark.portable' = @('CrystalDiskMark.exe','diskmark32.exe','diskmark64.exe')
-    'occt' = @('occt.exe')
-    'furmark' = @('FurMark.exe','FurMark64.exe')
+$shortcutCandidates = @{
+    'hwinfo' = @('hwinfo.exe','HWiNFO64.EXE');
+    'cpu-z.portable' = @('cpuz.exe','CPU-Z.exe');
+    'gpu-z' = @('GPU-Z.exe','gpuz.exe');
+    'prime95.portable' = @('prime95.exe');
+    'cinebench' = @('Cinebench.exe');
+    'crystaldiskmark.portable' = @('CrystalDiskMark.exe','diskmark32.exe','diskmark64.exe');
+    'occt' = @('occt.exe');
+    'furmark' = @('FurMark.exe','FurMark64.exe');
 }
 
 function Get-ShortcutDisplayName($pkgName) {
@@ -303,7 +303,7 @@ function Create-DesktopShortcutForPackage($pkgName) {
             Join-Path 'C:\ProgramData\chocolatey\bin' $cand,
             Join-Path (Join-Path 'C:\ProgramData\chocolatey\lib' $pkgName) (Join-Path 'tools' $cand),
             Join-Path (Join-Path $env:ProgramFiles $displayName) $cand,
-            Join-Path (Join-Path $env:'ProgramFiles(x86)' $displayName) $cand
+            Join-Path (Join-Path ${env:ProgramFiles(x86)} $displayName) $cand
         )
 
         foreach ($p in $pathsToCheck) {
