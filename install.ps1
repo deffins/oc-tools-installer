@@ -58,9 +58,9 @@ $packages = @(
     # Stress Testing & Benchmarks
     # ========================================
 
-    # Prime95 v30.19 - Portable/ZIP version
+    # Prime95 v30.19 - Installer version
     # Source: GIMPS / Mersenne Research (https://www.mersenne.org/download/)
-    @{Name="prime95.portable"; Description="Prime95 - CPU stress testing"; Selected=$true},
+    @{Name="prime95"; Description="Prime95 - CPU stress testing"; Selected=$true},
 
     # OCCT v13.1.6 - Installer version
     # Source: OCCT (https://www.ocbase.com/)
@@ -234,9 +234,31 @@ function Install-TestMem5 {
     $downloadFile = Join-Path $env:TEMP "TestMem5.7z"
 
     try {
-        # Download TestMem5
+        # Download TestMem5 with progress
         Write-Host "  Downloading TestMem5..." -ForegroundColor Yellow
-        Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadFile -UseBasicParsing
+
+        $webClient = New-Object System.Net.WebClient
+        $webClient.Headers.Add("User-Agent", "PowerShell")
+
+        # Progress event handler
+        $progressHandler = {
+            param($sender, $e)
+            $percent = [math]::Round(($e.BytesReceived / $e.TotalBytesToReceive) * 100, 0)
+            $received = [math]::Round($e.BytesReceived / 1MB, 2)
+            $total = [math]::Round($e.TotalBytesToReceive / 1MB, 2)
+            Write-Progress -Activity "Downloading TestMem5" -Status "$received MB / $total MB" -PercentComplete $percent
+        }
+
+        Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged -Action $progressHandler | Out-Null
+
+        try {
+            $webClient.DownloadFileTaskAsync($downloadUrl, $downloadFile).Wait()
+            Write-Progress -Activity "Downloading TestMem5" -Completed
+            Write-Host "  Download completed!" -ForegroundColor Green
+        } finally {
+            $webClient.Dispose()
+            Get-EventSubscriber | Where-Object { $_.SourceObject -eq $webClient } | Unregister-Event -Force
+        }
 
         # Create installation directory
         if (!(Test-Path $installPath)) {
@@ -325,9 +347,31 @@ function Install-CinebenchR23 {
     $downloadFile = Join-Path $env:TEMP "CinebenchR23.zip"
 
     try {
-        # Download Cinebench R23
+        # Download Cinebench R23 with progress
         Write-Host "  Downloading Cinebench R23..." -ForegroundColor Yellow
-        Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadFile -UseBasicParsing
+
+        $webClient = New-Object System.Net.WebClient
+        $webClient.Headers.Add("User-Agent", "PowerShell")
+
+        # Progress event handler
+        $progressHandler = {
+            param($sender, $e)
+            $percent = [math]::Round(($e.BytesReceived / $e.TotalBytesToReceive) * 100, 0)
+            $received = [math]::Round($e.BytesReceived / 1MB, 2)
+            $total = [math]::Round($e.TotalBytesToReceive / 1MB, 2)
+            Write-Progress -Activity "Downloading Cinebench R23" -Status "$received MB / $total MB" -PercentComplete $percent
+        }
+
+        Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged -Action $progressHandler | Out-Null
+
+        try {
+            $webClient.DownloadFileTaskAsync($downloadUrl, $downloadFile).Wait()
+            Write-Progress -Activity "Downloading Cinebench R23" -Completed
+            Write-Host "  Download completed!" -ForegroundColor Green
+        } finally {
+            $webClient.Dispose()
+            Get-EventSubscriber | Where-Object { $_.SourceObject -eq $webClient } | Unregister-Event -Force
+        }
 
         # Create installation directory
         if (!(Test-Path $installPath)) {
@@ -403,7 +447,7 @@ $shortcutCandidates = @{
     'hwinfo' = @('hwinfo.exe','HWiNFO64.EXE')
     'cpu-z.portable' = @('cpuz.exe','CPU-Z.exe')
     'gpu-z' = @('GPU-Z.exe','gpuz.exe')
-    'prime95.portable' = @('prime95.exe')
+    'prime95' = @('prime95.exe')
     'cinebench' = @('Cinebench.exe')
     'crystaldiskmark.portable' = @('CrystalDiskMark.exe','diskmark32.exe','diskmark64.exe')
     'occt' = @('occt.exe')
@@ -415,7 +459,7 @@ function Get-ShortcutDisplayName($pkgName) {
         'cpu-z.portable' { return 'CPU-Z' }
         'hwinfo' { return 'HWiNFO' }
         'gpu-z' { return 'GPU-Z' }
-        'prime95.portable' { return 'Prime95' }
+        'prime95' { return 'Prime95' }
         'cinebench' { return 'Cinebench' }
         'crystaldiskmark.portable' { return 'CrystalDiskMark' }
         'occt' { return 'OCCT' }
