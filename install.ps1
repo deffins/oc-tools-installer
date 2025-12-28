@@ -42,7 +42,8 @@ $packages = @(
     @{Name="prime95.portable"; Description="Prime95 - CPU stress testing"; Selected=$true},
     @{Name="occt"; Description="OCCT - CPU/GPU/RAM stability testing"; Selected=$true},
     @{Name="furmark"; Description="FurMark - GPU stress test & burn-in"; Selected=$true},
-    @{Name="cinebench"; Description="Cinebench - CPU rendering benchmark"; Selected=$true},
+    @{Name="cinebench"; Description="Cinebench R20 - CPU rendering benchmark"; Selected=$true},
+    @{Name="cinebench-r23"; Description="Cinebench R23 - CPU rendering benchmark"; Selected=$true},
     @{Name="testmem5"; Description="TestMem5 - RAM stability testing (custom install)"; Selected=$true; CustomInstall=$true},
 
     # Storage Benchmarks
@@ -270,6 +271,7 @@ $shortcutCandidates = @{
     'gpu-z' = @('GPU-Z.exe','gpuz.exe');
     'prime95.portable' = @('prime95.exe');
     'cinebench' = @('Cinebench.exe');
+    'cinebench-r23' = @('Cinebench.exe');
     'crystaldiskmark.portable' = @('CrystalDiskMark.exe','diskmark32.exe','diskmark64.exe');
     'occt' = @('occt.exe');
     'furmark' = @('FurMark.exe','FurMark64.exe');
@@ -281,7 +283,8 @@ function Get-ShortcutDisplayName($pkgName) {
         'hwinfo' { return 'HWiNFO' }
         'gpu-z' { return 'GPU-Z' }
         'prime95.portable' { return 'Prime95' }
-        'cinebench' { return 'Cinebench' }
+        'cinebench' { return 'Cinebench R20' }
+        'cinebench-r23' { return 'Cinebench R23' }
         'crystaldiskmark.portable' { return 'CrystalDiskMark' }
         'occt' { return 'OCCT' }
         'furmark' { return 'FurMark' }
