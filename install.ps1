@@ -11,9 +11,23 @@ if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 
 # Package definitions
 $packages = @(
+    # Monitoring & Diagnostics
     @{Name="hwinfo"; Description="HWiNFO - Hardware monitoring & diagnostics"; Selected=$true},
+    @{Name="cpu-z.portable"; Description="CPU-Z - CPU information & monitoring"; Selected=$true},
+    @{Name="gpu-z"; Description="GPU-Z - Graphics card information"; Selected=$true},
+    @{Name="aida64-extreme"; Description="AIDA64 Extreme - System info & benchmarks (30-day trial)"; Selected=$false},
+
+    # Stress Testing & Benchmarks
     @{Name="prime95.portable"; Description="Prime95 - CPU stress testing"; Selected=$true},
-    @{Name="occt"; Description="OCCT - CPU/GPU/RAM stability testing"; Selected=$true}
+    @{Name="occt"; Description="OCCT - CPU/GPU/RAM stability testing"; Selected=$true},
+    @{Name="furmark"; Description="FurMark - GPU stress test & burn-in"; Selected=$true},
+    @{Name="cinebench"; Description="Cinebench - CPU rendering benchmark"; Selected=$true},
+
+    # Storage Benchmarks
+    @{Name="crystaldiskmark.portable"; Description="CrystalDiskMark - SSD/HDD benchmark tool"; Selected=$true},
+
+    # Overclocking Utilities
+    @{Name="msiafterburner"; Description="MSI Afterburner - GPU overclocking & monitoring"; Selected=$true}
 )
 
 $currentIndex = 0
