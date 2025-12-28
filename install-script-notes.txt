@@ -1,0 +1,4 @@
+powershell -ExecutionPolicy Bypass -File C:\Users\deffo\Downloads\install-tools.ps1
+powershell -ExecutionPolicy Bypass -File C:\Users\deffo\Downloads\uninstall-tools.ps1
+
+C:\projects\install-script

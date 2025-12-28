@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OC Tools Installer - Overclocking & Benchmarking Tools</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+
+        .install-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .install-box h2 {
+            margin-bottom: 15px;
+            color: #4af;
+        }
+
+        .command-box {
+            background: #1a1a2e;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            position: relative;
+            margin: 15px 0;
+            border: 1px solid #333;
+        }
+
+        .command-box code {
+            color: #4af;
+            word-wrap: break-word;
+            display: block;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4af;
+            color: #1a1a2e;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: #6cf;
+        }
+
+        .copy-btn:active {
+            background: #2a8;
+        }
+
+        .tools-list {
+            list-style: none;
+            margin-top: 20px;
+        }
+
+        .tools-list li {
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            border-left: 3px solid #4af;
+        }
+
+        .tools-list li strong {
+            color: #4af;
+        }
+
+        .warning {
+            background: rgba(255, 200, 0, 0.15);
+            border-left: 3px solid #fc0;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        .warning strong {
+            color: #fc0;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .feature {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .feature-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            opacity: 0.7;
+            font-size: 0.9em;
+        }
+
+        footer a {
+            color: #4af;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ OC Tools Installer</h1>
+        <p class="subtitle">One-command installation for essential overclocking and benchmarking tools</p>
+
+        <div class="install-box">
+            <h2>Quick Install</h2>
+            <p>Run this command in PowerShell as Administrator:</p>
+            <div class="command-box">
+                <code>irm fons.lv/oc-tools/install.ps1 | iex</code>
+                <button class="copy-btn" onclick="copyCommand()">Copy</button>
+            </div>
+            <p style="margin-top: 15px; font-size: 0.9em; opacity: 0.8;">
+                Opens an interactive menu to select and install tools automatically
+            </p>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Administrator Required</strong><br>
+            This script must be run as Administrator to install software. Right-click PowerShell and select "Run as Administrator"
+        </div>
+
+        <div class="install-box">
+            <h2>What Gets Installed?</h2>
+            <p>The script installs Chocolatey (if needed) and gives you an interactive menu to select:</p>
+            <ul class="tools-list">
+                <li><strong>HWiNFO</strong> - Comprehensive hardware monitoring and diagnostics</li>
+                <li><strong>Prime95</strong> - Industry-standard CPU stress testing tool</li>
+                <li><strong>OCCT</strong> - Advanced stability testing for CPU, GPU, and RAM</li>
+            </ul>
+        </div>
+
+        <div class="install-box">
+            <h2>Features</h2>
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🎯</div>
+                    <strong>Interactive Menu</strong>
+                    <p>Choose which tools to install</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <strong>Fast Setup</strong>
+                    <p>Automated installation via Chocolatey</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">✅</div>
+                    <strong>Safe & Simple</strong>
+                    <p>No manual downloads needed</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="install-box">
+            <h2>Alternative: Download Script</h2>
+            <p>Prefer to review the script first?</p>
+            <div class="command-box">
+                <code>Invoke-WebRequest -Uri "https://fons.lv/oc-tools/install.ps1" -OutFile "install.ps1"</code>
+                <button class="copy-btn" onclick="copyDownload()">Copy</button>
+            </div>
+            <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.8;">
+                Then review and run: <code style="color: #4af;">.\install.ps1</code>
+            </p>
+        </div>
+
+        <footer>
+            <p>Made for overclockers by overclockers | <a href="https://github.com/yourusername/oc-tools-installer" target="_blank">View on GitHub</a></p>
+        </footer>
+    </div>
+
+    <script>
+        function copyCommand() {
+            const text = "irm fons.lv/oc-tools/install.ps1 | iex";
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = "Copied!";
+                btn.style.background = "#2a8";
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = "#4af";
+                }, 2000);
+            });
+        }
+
+        function copyDownload() {
+            const text = 'Invoke-WebRequest -Uri "https://fons.lv/oc-tools/install.ps1" -OutFile "install.ps1"';
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = "Copied!";
+                btn.style.background = "#2a8";
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = "#4af";
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
