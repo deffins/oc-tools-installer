@@ -31,25 +31,68 @@ if ($modeChoice -eq "3") {
 $isUninstallMode = ($modeChoice -eq "2")
 
 # Package definitions
+# Format: Name, Description, Selected, CustomInstall (optional)
+# Source: Chocolatey Community Repository (https://community.chocolatey.org/) unless marked as "custom install"
 $packages = @(
+    # ========================================
     # Monitoring & Diagnostics
+    # ========================================
+
+    # HWiNFO v8.30 - Installer version
+    # Source: REALiX (https://www.hwinfo.com/)
     @{Name="hwinfo"; Description="HWiNFO - Hardware monitoring & diagnostics"; Selected=$true},
+
+    # CPU-Z v2.17 - Portable/ZIP version
+    # Source: CPUID (https://www.cpuid.com/softwares/cpu-z.html)
     @{Name="cpu-z.portable"; Description="CPU-Z - CPU information & monitoring"; Selected=$true},
+
+    # GPU-Z v2.68 - Portable/ZIP version
+    # Source: TechPowerUp (https://www.techpowerup.com/gpuz/)
     @{Name="gpu-z"; Description="GPU-Z - Graphics card information"; Selected=$true},
+
+    # AIDA64 Extreme - Installer version (30-day trial)
+    # Source: FinalWire (https://www.aida64.com/)
     @{Name="aida64-extreme"; Description="AIDA64 Extreme - System info & benchmarks (30-day trial)"; Selected=$false},
 
+    # ========================================
     # Stress Testing & Benchmarks
+    # ========================================
+
+    # Prime95 v30.19 - Portable/ZIP version
+    # Source: GIMPS / Mersenne Research (https://www.mersenne.org/download/)
     @{Name="prime95.portable"; Description="Prime95 - CPU stress testing"; Selected=$true},
+
+    # OCCT v13.1.6 - Installer version
+    # Source: OCCT (https://www.ocbase.com/)
     @{Name="occt"; Description="OCCT - CPU/GPU/RAM stability testing"; Selected=$true},
+
+    # FurMark v1.38.1 - Installer version
+    # Source: Geeks3D (https://geeks3d.com/furmark/)
     @{Name="furmark"; Description="FurMark - GPU stress test & burn-in"; Selected=$true},
+
+    # Cinebench 2024 v2024.1.0 - Installer version
+    # Source: Maxon (https://www.maxon.net/en/cinebench)
     @{Name="cinebench"; Description="Cinebench 2024 - CPU rendering benchmark"; Selected=$true},
+
+    # Cinebench R23 v23.200 - Custom install (ZIP extraction)
+    # Source: Maxon Direct Download (https://installer.maxon.net/cinebench/CinebenchR23.zip)
     @{Name="cinebench-r23"; Description="Cinebench R23 - CPU rendering benchmark (custom install)"; Selected=$true; CustomInstall=$true},
+
+    # TestMem5 v0.13.1 - Custom install (7z extraction)
+    # Source: GitHub CoolCmd/TestMem5 (https://github.com/CoolCmd/TestMem5/releases)
     @{Name="testmem5"; Description="TestMem5 - RAM stability testing (custom install)"; Selected=$true; CustomInstall=$true},
 
+    # ========================================
     # Storage Benchmarks
+    # ========================================
+
+    # CrystalDiskMark - Portable/ZIP version
+    # Source: Crystal Dew World (https://crystalmark.info/en/software/crystaldiskmark/)
     @{Name="crystaldiskmark.portable"; Description="CrystalDiskMark - SSD/HDD benchmark tool"; Selected=$true}
 
+    # ========================================
     # Overclocking Utilities
+    # ========================================
     # NOTE: MSI Afterburner removed by request (rarely used / causes CDN issues)
 )
 

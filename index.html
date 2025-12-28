@@ -158,48 +158,88 @@
         <p class="subtitle">One-command installation for essential overclocking and benchmarking tools</p>
 
         <div class="install-box">
-            <h2>Quick Install</h2>
-            <p>Run this command in PowerShell as Administrator:</p>
+            <h2>Par šo skriptu</h2>
+            <p>Šis skripts ir labu nodomu vadīts - izveidots, lai optimizētu darbu, palīdzot citiem labot, testēt, diagnosticēt, overklokot un konfigurēt savus datorus pēc labākās sirdsapziņas.</p>
+
+            <p style="margin-top: 15px;">Skripts instalē <strong>Chocolatey</strong> (ja tas vēl nav instalēts), ar kura palīdzību tiek uzstādītas Chocolatey repozitorijā pieejamās aplikācijas. Daži rīki tiek instalēti manuāli no citiem avotiem (norādīts zemāk sarakstā).</p>
+
+            <div class="warning" style="margin-top: 20px;">
+                <strong>⚠️ Atbildība</strong><br>
+                Visu atbildību par šī rīka lietošanu katrs uzņemas pats. Stress-testing rīki var potenciāli apdraudēt aparatūru, ja tiek nepareizi izmantoti.
+            </div>
+        </div>
+
+        <div class="install-box">
+            <h2>Ātrā instalācija</h2>
+            <p>Izpildi šo komandu PowerShell kā Administrators:</p>
             <div class="command-box">
                 <code>irm fons.lv/oc-tools/install.ps1 | iex</code>
                 <button class="copy-btn" onclick="copyCommand()">Copy</button>
             </div>
             <p style="margin-top: 15px; font-size: 0.9em; opacity: 0.8;">
-                Opens an interactive menu to select and install tools automatically
+                Atvērsies interaktīva izvēlne, lai izvēlētos un automātiski instalētu rīkus
             </p>
         </div>
 
         <div class="warning">
-            <strong>⚠️ Administrator Required</strong><br>
-            This script must be run as Administrator to install software. Right-click PowerShell and select "Run as Administrator"
+            <strong>⚠️ Nepieciešamas administratora tiesības</strong><br>
+            Šis skripts jāpalaiž kā Administrator. Klikšķini ar labo peles pogu uz PowerShell un izvēlies "Run as Administrator"
         </div>
 
         <div class="install-box">
-            <h2>What Gets Installed?</h2>
-            <p>The script installs Chocolatey (if needed) and gives you an interactive menu to select from 11 essential tools:</p>
+            <h2>Kas tiek instalēts?</h2>
+            <p>Interaktīvā izvēlnē var izvēlēties no 11 būtiskiem rīkiem:</p>
 
             <h3 style="color: #4af; margin-top: 20px; font-size: 1.1em;">Monitoring & Diagnostics</h3>
             <ul class="tools-list">
-                <li><strong>HWiNFO</strong> - Comprehensive hardware monitoring and diagnostics</li>
-                <li><strong>CPU-Z</strong> - Detailed CPU information and monitoring</li>
-                <li><strong>GPU-Z</strong> - Graphics card specifications and monitoring</li>
-                <li><strong>AIDA64 Extreme</strong> - Professional system info & benchmarks (30-day trial)</li>
+                <li><strong>HWiNFO</strong> v8.30 - Visaptveroša aparatūras monitorēšana un diagnostika<br>
+                    <span style="font-size: 0.85em; opacity: 0.7;">📦 Avots: Chocolatey (Installer) - <a href="https://www.hwinfo.com/" style="color: #4af;">REALiX</a></span>
+                </li>
+                <li><strong>CPU-Z</strong> v2.17 - Detalizēta CPU informācija un monitorēšana<br>
+                    <span style="font-size: 0.85em; opacity: 0.7;">📦 Avots: Chocolatey (Portable) - <a href="https://www.cpuid.com/" style="color: #4af;">CPUID</a></span>
+                </li>
+                <li><strong>GPU-Z</strong> v2.68 - Videokartes specifikācijas un monitorēšana<br>
+                    <span style="font-size: 0.85em; opacity: 0.7;">📦 Avots: Chocolatey (Portable) - <a href="https://www.techpowerup.com/gpuz/" style="color: #4af;">TechPowerUp</a></span>
+                </li>
+                <li><strong>AIDA64 Extreme</strong> - Profesionāla sistēmas informācija & benchmarki (30 dienu izmēģinājums)<br>
+                    <span style="font-size: 0.85em; opacity: 0.7;">📦 Avots: Chocolatey (Installer) - <a href="https://www.aida64.com/" style="color: #4af;">FinalWire</a></span>
+                </li>
             </ul>
 
             <h3 style="color: #4af; margin-top: 20px; font-size: 1.1em;">Stress Testing & Benchmarks</h3>
             <ul class="tools-list">
-                <li><strong>Prime95</strong> - Industry-standard CPU stress testing</li>
-                <li><strong>OCCT</strong> - Advanced stability testing for CPU, GPU, and RAM</li>
-                <li><strong>FurMark</strong> - Intensive GPU stress test and burn-in tool</li>
-                <li><strong>Cinebench</strong> - CPU rendering performance benchmark</li>
-                <li><strong>TestMem5</strong> - RAM stability and overclocking testing tool</li>
+                <li><strong>Prime95</strong> v30.19 - Nozares standarta CPU stress tests<br>
+                    <span style="font-size: 0.85em; opacity: 0.7;">📦 Avots: Chocolatey (Portable) - <a href="https://www.mersenne.org/" style="color: #4af;">GIMPS</a></span>
+                </li>
+                <li><strong>OCCT</strong> v13.1.6 - CPU/GPU/RAM stabilitātes testēšana<br>
+                    <span style="font-size: 0.85em; opacity: 0.7;">📦 Avots: Chocolatey (Installer) - <a href="https://www.ocbase.com/" style="color: #4af;">OCCT</a></span>
+                </li>
+                <li><strong>FurMark</strong> v1.38.1 - Intensīvs GPU stress tests<br>
+                    <span style="font-size: 0.85em; opacity: 0.7;">📦 Avots: Chocolatey (Installer) - <a href="https://geeks3d.com/furmark/" style="color: #4af;">Geeks3D</a></span>
+                </li>
+                <li><strong>Cinebench 2024</strong> v2024.1.0 - CPU rendering veiktspējas benchmarks<br>
+                    <span style="font-size: 0.85em; opacity: 0.7;">📦 Avots: Chocolatey (Installer) - <a href="https://www.maxon.net/en/cinebench" style="color: #4af;">Maxon</a></span>
+                </li>
+                <li><strong>Cinebench R23</strong> v23.200 - CPU rendering veiktspējas benchmarks<br>
+                    <span style="font-size: 0.85em; opacity: 0.7;">🔧 Avots: Manuāla instalācija (ZIP) - <a href="https://installer.maxon.net/cinebench/CinebenchR23.zip" style="color: #4af;">Maxon tiešā saite</a></span>
+                </li>
+                <li><strong>TestMem5</strong> v0.13.1 - RAM stabilitātes un overklokošanas testēšana<br>
+                    <span style="font-size: 0.85em; opacity: 0.7;">🔧 Avots: Manuāla instalācija (7z) - <a href="https://github.com/CoolCmd/TestMem5" style="color: #4af;">GitHub CoolCmd</a></span>
+                </li>
             </ul>
 
-            <h3 style="color: #4af; margin-top: 20px; font-size: 1.1em;">Storage & Overclocking</h3>
+            <h3 style="color: #4af; margin-top: 20px; font-size: 1.1em;">Storage Benchmarks</h3>
             <ul class="tools-list">
-                <li><strong>CrystalDiskMark</strong> - SSD/HDD read/write speed benchmark</li>
-                <li><strong>MSI Afterburner</strong> - GPU overclocking and real-time monitoring</li>
+                <li><strong>CrystalDiskMark</strong> - SSD/HDD lasīšanas/rakstīšanas ātruma benchmarks<br>
+                    <span style="font-size: 0.85em; opacity: 0.7;">📦 Avots: Chocolatey (Portable) - <a href="https://crystalmark.info/" style="color: #4af;">Crystal Dew World</a></span>
+                </li>
             </ul>
+
+            <p style="margin-top: 20px; font-size: 0.9em; opacity: 0.8;">
+                <strong>Leģenda:</strong><br>
+                📦 = Instalēts caur Chocolatey | 🔧 = Manuāla instalācija (tiešā lejupielāde)<br>
+                (Installer) = Instalācijas programma | (Portable/ZIP) = Pārnēsājama/arhīva versija
+            </p>
         </div>
 
         <div class="install-box">
@@ -224,19 +264,30 @@
         </div>
 
         <div class="install-box">
-            <h2>Alternative: Download Script</h2>
-            <p>Prefer to review the script first?</p>
+            <h2>Alternatīva: Lejupielādēt skriptu</h2>
+            <p>Vēlies vispirms pārskatīt kodu?</p>
             <div class="command-box">
                 <code>Invoke-WebRequest -Uri "https://fons.lv/oc-tools/install.ps1" -OutFile "install.ps1"</code>
                 <button class="copy-btn" onclick="copyDownload()">Copy</button>
             </div>
             <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.8;">
-                Then review and run: <code style="color: #4af;">.\install.ps1</code>
+                Pēc tam pārskati un izpildi: <code style="color: #4af;">.\install.ps1</code>
+            </p>
+            <p style="margin-top: 15px; font-size: 0.9em;">
+                <a href="https://github.com/deffins/oc-tools-installer" target="_blank" style="color: #4af; text-decoration: none;">
+                    📖 Skatīt pilnu kodu GitHub →
+                </a>
             </p>
         </div>
 
         <footer>
-            <p>Made for overclockers by overclockers | <a href="https://github.com/deffins/oc-tools-installer" target="_blank">View on GitHub</a></p>
+            <p style="margin-bottom: 10px;">
+                <strong>Izveidots ar Claude AI</strong><br>
+                Visu darbu izdarīja <a href="https://claude.ai/" style="color: #4af;">Claude</a>, autors (<a href="https://deffo.pro" style="color: #4af;">deffo.pro</a>) to regulēja un testēja.
+            </p>
+            <p>
+                <a href="https://github.com/deffins/oc-tools-installer" target="_blank">View on GitHub</a>
+            </p>
         </footer>
     </div>
 
