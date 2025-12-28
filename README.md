@@ -58,6 +58,8 @@ notepad install.ps1
 
 ## Development
 
+View the source on GitHub: https://github.com/deffins/oc-tools-installer
+
 ### Local Testing
 
 ```powershell
