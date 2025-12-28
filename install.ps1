@@ -1,5 +1,5 @@
-# OC & Benchmarking Tools Installer
-# Description: Installs Chocolatey and essential overclocking/benchmarking tools
+# OC & Benchmarking Tools Installer/Uninstaller
+# Description: Installs or uninstalls Chocolatey and essential overclocking/benchmarking tools
 
 # Check if running as Administrator
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
@@ -8,6 +8,27 @@ if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     pause
     exit 1
 }
+
+# Mode selection
+Clear-Host
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  OC & Benchmark Tools Manager" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Select mode:" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  [1] Install tools" -ForegroundColor Green
+Write-Host "  [2] Uninstall tools" -ForegroundColor Red
+Write-Host "  [3] Exit" -ForegroundColor Gray
+Write-Host ""
+$modeChoice = Read-Host "Enter your choice (1-3)"
+
+if ($modeChoice -eq "3") {
+    Write-Host "Exiting..." -ForegroundColor Yellow
+    exit 0
+}
+
+$isUninstallMode = ($modeChoice -eq "2")
 
 # Package definitions
 $packages = @(
@@ -36,11 +57,14 @@ $totalItems = $packages.Count + 1  # +1 for "Start Installation"
 
 function Show-Menu {
     Clear-Host
+    $modeTitle = if ($isUninstallMode) { "Uninstaller" } else { "Installer" }
+    $actionText = if ($isUninstallMode) { "uninstall" } else { "install" }
+
     Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "  OC & Benchmark Tools Installer" -ForegroundColor Cyan
+    Write-Host "  OC & Benchmark Tools $modeTitle" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "Select tools to install:" -ForegroundColor Yellow
+    Write-Host "Select tools to ${actionText}:" -ForegroundColor Yellow
     Write-Host "(Use UP/DOWN arrows, SPACE to toggle, ENTER to select, ESC to exit)" -ForegroundColor Gray
     Write-Host ""
     
@@ -58,12 +82,14 @@ function Show-Menu {
     Write-Host ""
     Write-Host "----------------------------------------" -ForegroundColor DarkGray
     
-    # "Start Installation" option
+    # "Start Installation/Uninstallation" option
+    $startText = if ($isUninstallMode) { "START UNINSTALLATION" } else { "START INSTALLATION" }
+    $startColor = if ($isUninstallMode) { "Red" } else { "Yellow" }
     $prefix = if ($currentIndex -eq $packages.Count) { ">" } else { " " }
     if ($currentIndex -eq $packages.Count) {
-        Write-Host "$prefix [ START INSTALLATION ]" -ForegroundColor Yellow -BackgroundColor DarkGreen
+        Write-Host "$prefix [ $startText ]" -ForegroundColor $startColor -BackgroundColor DarkGreen
     } else {
-        Write-Host "$prefix [ START INSTALLATION ]" -ForegroundColor Yellow
+        Write-Host "$prefix [ $startText ]" -ForegroundColor $startColor
     }
     
     Write-Host ""
@@ -115,31 +141,35 @@ if ($selectedPackages.Count -eq 0) {
     exit 0
 }
 
-# Start installation
+# Start installation/uninstallation
 Clear-Host
+$actionTitle = if ($isUninstallMode) { "Uninstallation" } else { "Installation" }
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Starting Installation" -ForegroundColor Cyan
+Write-Host "  Starting $actionTitle" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Install Chocolatey if not present
-Write-Host "Checking for Chocolatey..." -ForegroundColor Yellow
-if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
-    Write-Host "Installing Chocolatey..." -ForegroundColor Green
-    Set-ExecutionPolicy Bypass -Scope Process -Force
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-    Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-    
-    # Refresh environment variables
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-    
-    Write-Host "Chocolatey installed successfully!" -ForegroundColor Green
-} else {
-    Write-Host "Chocolatey is already installed." -ForegroundColor Green
+if (-not $isUninstallMode) {
+    # Install Chocolatey if not present (only for install mode)
+    Write-Host "Checking for Chocolatey..." -ForegroundColor Yellow
+    if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
+        Write-Host "Installing Chocolatey..." -ForegroundColor Green
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+        # Refresh environment variables
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+        Write-Host "Chocolatey installed successfully!" -ForegroundColor Green
+    } else {
+        Write-Host "Chocolatey is already installed." -ForegroundColor Green
+    }
 }
 
 Write-Host ""
-Write-Host "Installing selected packages..." -ForegroundColor Yellow
+$actionVerb = if ($isUninstallMode) { "Uninstalling" } else { "Installing" }
+Write-Host "$actionVerb selected packages..." -ForegroundColor Yellow
 Write-Host ""
 
 # Function to install TestMem5
@@ -202,22 +232,65 @@ function Install-TestMem5 {
     Write-Host ""
 }
 
-# Install each selected package
+# Function to uninstall TestMem5
+function Uninstall-TestMem5 {
+    Write-Host "Uninstalling TestMem5 (custom uninstall)..." -ForegroundColor Cyan
+
+    $appDataPath = [Environment]::GetFolderPath("ApplicationData")
+    $installPath = Join-Path $appDataPath "TestMem5"
+    $desktopPath = [Environment]::GetFolderPath("Desktop")
+    $shortcutPath = Join-Path $desktopPath "TestMem5.lnk"
+
+    try {
+        # Remove desktop shortcut
+        if (Test-Path $shortcutPath) {
+            Remove-Item $shortcutPath -Force
+            Write-Host "  Desktop shortcut removed" -ForegroundColor Green
+        }
+
+        # Remove installation directory
+        if (Test-Path $installPath) {
+            Remove-Item $installPath -Recurse -Force
+            Write-Host "  TestMem5 folder removed from: $installPath" -ForegroundColor Green
+        } else {
+            Write-Host "  TestMem5 folder not found (may already be uninstalled)" -ForegroundColor Yellow
+        }
+
+    } catch {
+        Write-Host "  Error uninstalling TestMem5: $_" -ForegroundColor Red
+    }
+
+    Write-Host ""
+}
+
+# Install or Uninstall each selected package
 foreach ($pkg in $selectedPackages) {
     if ($pkg.CustomInstall -and $pkg.Name -eq "testmem5") {
-        Install-TestMem5
+        if ($isUninstallMode) {
+            Uninstall-TestMem5
+        } else {
+            Install-TestMem5
+        }
     } else {
-        Write-Host "Installing $($pkg.Name)..." -ForegroundColor Cyan
-        choco install $pkg.Name -y
+        $action = if ($isUninstallMode) { "Uninstalling" } else { "Installing" }
+        Write-Host "$action $($pkg.Name)..." -ForegroundColor Cyan
+        if ($isUninstallMode) {
+            choco uninstall $pkg.Name -y
+        } else {
+            choco install $pkg.Name -y
+        }
         Write-Host ""
     }
 }
 
+$completeText = if ($isUninstallMode) { "Uninstallation Complete!" } else { "Installation Complete!" }
+$listTitle = if ($isUninstallMode) { "Uninstalled tools:" } else { "Installed tools:" }
+
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "  Installation Complete!" -ForegroundColor Green
+Write-Host "  $completeText" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "Installed tools:" -ForegroundColor White
+Write-Host "$listTitle" -ForegroundColor White
 foreach ($pkg in $selectedPackages) {
     Write-Host "  - $($pkg.Description)" -ForegroundColor Gray
 }
