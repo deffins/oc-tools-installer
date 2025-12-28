@@ -42,8 +42,8 @@ $packages = @(
     @{Name="prime95.portable"; Description="Prime95 - CPU stress testing"; Selected=$true},
     @{Name="occt"; Description="OCCT - CPU/GPU/RAM stability testing"; Selected=$true},
     @{Name="furmark"; Description="FurMark - GPU stress test & burn-in"; Selected=$true},
-    @{Name="cinebench"; Description="Cinebench R20 - CPU rendering benchmark"; Selected=$true},
-    @{Name="cinebench-r23"; Description="Cinebench R23 - CPU rendering benchmark"; Selected=$true},
+    @{Name="cinebench"; Description="Cinebench 2024 - CPU rendering benchmark"; Selected=$true},
+    @{Name="cinebench-r23"; Description="Cinebench R23 - CPU rendering benchmark (custom install)"; Selected=$true; CustomInstall=$true},
     @{Name="testmem5"; Description="TestMem5 - RAM stability testing (custom install)"; Selected=$true; CustomInstall=$true},
 
     # Storage Benchmarks
@@ -264,17 +264,107 @@ function Uninstall-TestMem5 {
     Write-Host ""
 }
 
+# Function to install Cinebench R23
+function Install-CinebenchR23 {
+    Write-Host "Installing Cinebench R23 (custom install)..." -ForegroundColor Cyan
+
+    # Ensure 7zip is installed
+    if (!(Get-Command 7z -ErrorAction SilentlyContinue)) {
+        Write-Host "  Installing 7zip (required for extraction)..." -ForegroundColor Yellow
+        choco install 7zip.install -y
+        # Refresh PATH
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    }
+
+    $downloadUrl = "https://installer.maxon.net/cinebench/CinebenchR23.zip"
+    $appDataPath = [Environment]::GetFolderPath("ApplicationData")
+    $installPath = Join-Path $appDataPath "CinebenchR23"
+    $downloadFile = Join-Path $env:TEMP "CinebenchR23.zip"
+
+    try {
+        # Download Cinebench R23
+        Write-Host "  Downloading Cinebench R23..." -ForegroundColor Yellow
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadFile -UseBasicParsing
+
+        # Create installation directory
+        if (!(Test-Path $installPath)) {
+            New-Item -ItemType Directory -Path $installPath -Force | Out-Null
+        }
+
+        # Extract with 7zip
+        Write-Host "  Extracting Cinebench R23..." -ForegroundColor Yellow
+        & 7z x "$downloadFile" -o"$installPath" -y | Out-Null
+
+        # Create desktop shortcut
+        $desktopPath = [Environment]::GetFolderPath("Desktop")
+        $exePath = Join-Path $installPath "Cinebench.exe"
+
+        if (Test-Path $exePath) {
+            $shortcutPath = Join-Path $desktopPath "Cinebench R23.lnk"
+            $WScriptShell = New-Object -ComObject WScript.Shell
+            $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
+            $shortcut.TargetPath = $exePath
+            $shortcut.WorkingDirectory = $installPath
+            $shortcut.Description = "Cinebench R23 - CPU Rendering Benchmark"
+            $shortcut.Save()
+
+            Write-Host "  Cinebench R23 installed to: $installPath" -ForegroundColor Green
+            Write-Host "  Desktop shortcut created!" -ForegroundColor Green
+        } else {
+            Write-Host "  Warning: Cinebench.exe not found after extraction" -ForegroundColor Red
+        }
+
+        # Cleanup
+        Remove-Item $downloadFile -Force -ErrorAction SilentlyContinue
+
+    } catch {
+        Write-Host "  Error installing Cinebench R23: $_" -ForegroundColor Red
+    }
+
+    Write-Host ""
+}
+
+# Function to uninstall Cinebench R23
+function Uninstall-CinebenchR23 {
+    Write-Host "Uninstalling Cinebench R23 (custom uninstall)..." -ForegroundColor Cyan
+
+    $appDataPath = [Environment]::GetFolderPath("ApplicationData")
+    $installPath = Join-Path $appDataPath "CinebenchR23"
+    $desktopPath = [Environment]::GetFolderPath("Desktop")
+    $shortcutPath = Join-Path $desktopPath "Cinebench R23.lnk"
+
+    try {
+        # Remove desktop shortcut
+        if (Test-Path $shortcutPath) {
+            Remove-Item $shortcutPath -Force
+            Write-Host "  Desktop shortcut removed" -ForegroundColor Green
+        }
+
+        # Remove installation directory
+        if (Test-Path $installPath) {
+            Remove-Item $installPath -Recurse -Force
+            Write-Host "  Cinebench R23 folder removed from: $installPath" -ForegroundColor Green
+        } else {
+            Write-Host "  Cinebench R23 folder not found (may already be uninstalled)" -ForegroundColor Yellow
+        }
+
+    } catch {
+        Write-Host "  Error uninstalling Cinebench R23: $_" -ForegroundColor Red
+    }
+
+    Write-Host ""
+}
+
 # Shortcut helpers: create/remove desktop shortcuts for installed packages
 $shortcutCandidates = @{
-    'hwinfo' = @('hwinfo.exe','HWiNFO64.EXE');
-    'cpu-z.portable' = @('cpuz.exe','CPU-Z.exe');
-    'gpu-z' = @('GPU-Z.exe','gpuz.exe');
-    'prime95.portable' = @('prime95.exe');
-    'cinebench' = @('Cinebench.exe');
-    'cinebench-r23' = @('Cinebench.exe');
-    'crystaldiskmark.portable' = @('CrystalDiskMark.exe','diskmark32.exe','diskmark64.exe');
-    'occt' = @('occt.exe');
-    'furmark' = @('FurMark.exe','FurMark64.exe');
+    'hwinfo' = @('hwinfo.exe','HWiNFO64.EXE')
+    'cpu-z.portable' = @('cpuz.exe','CPU-Z.exe')
+    'gpu-z' = @('GPU-Z.exe','gpuz.exe')
+    'prime95.portable' = @('prime95.exe')
+    'cinebench' = @('Cinebench.exe')
+    'crystaldiskmark.portable' = @('CrystalDiskMark.exe','diskmark32.exe','diskmark64.exe')
+    'occt' = @('occt.exe')
+    'furmark' = @('FurMark.exe','FurMark64.exe')
 }
 
 function Get-ShortcutDisplayName($pkgName) {
@@ -283,8 +373,7 @@ function Get-ShortcutDisplayName($pkgName) {
         'hwinfo' { return 'HWiNFO' }
         'gpu-z' { return 'GPU-Z' }
         'prime95.portable' { return 'Prime95' }
-        'cinebench' { return 'Cinebench R20' }
-        'cinebench-r23' { return 'Cinebench R23' }
+        'cinebench' { return 'Cinebench' }
         'crystaldiskmark.portable' { return 'CrystalDiskMark' }
         'occt' { return 'OCCT' }
         'furmark' { return 'FurMark' }
@@ -298,15 +387,17 @@ function Create-DesktopShortcutForPackage($pkgName) {
     $shortcutPath = Join-Path $desktopPath "$displayName.lnk"
 
     $candidates = @()
-    if ($shortcutCandidates.ContainsKey($pkgName)) { $candidates = $shortcutCandidates[$pkgName] }
+    if ($shortcutCandidates.ContainsKey($pkgName)) {
+        $candidates = @($shortcutCandidates[$pkgName])
+    }
 
     # Search common locations for candidate executables
     foreach ($cand in $candidates) {
         $pathsToCheck = @(
-            Join-Path 'C:\ProgramData\chocolatey\bin' $cand,
-            Join-Path (Join-Path 'C:\ProgramData\chocolatey\lib' $pkgName) (Join-Path 'tools' $cand),
-            Join-Path (Join-Path $env:ProgramFiles $displayName) $cand,
-            Join-Path (Join-Path ${env:ProgramFiles(x86)} $displayName) $cand
+            (Join-Path 'C:\ProgramData\chocolatey\bin' $cand)
+            (Join-Path (Join-Path 'C:\ProgramData\chocolatey\lib' $pkgName) (Join-Path 'tools' $cand))
+            (Join-Path (Join-Path $env:ProgramFiles $displayName) $cand)
+            (Join-Path (Join-Path ${env:ProgramFiles(x86)} $displayName) $cand)
         )
 
         foreach ($p in $pathsToCheck) {
@@ -338,11 +429,19 @@ function Remove-DesktopShortcutForPackage($pkgName) {
 
 # Install or Uninstall each selected package
 foreach ($pkg in $selectedPackages) {
-    if ($pkg.CustomInstall -and $pkg.Name -eq "testmem5") {
-        if ($isUninstallMode) {
-            Uninstall-TestMem5
-        } else {
-            Install-TestMem5
+    if ($pkg.CustomInstall) {
+        if ($pkg.Name -eq "testmem5") {
+            if ($isUninstallMode) {
+                Uninstall-TestMem5
+            } else {
+                Install-TestMem5
+            }
+        } elseif ($pkg.Name -eq "cinebench-r23") {
+            if ($isUninstallMode) {
+                Uninstall-CinebenchR23
+            } else {
+                Install-CinebenchR23
+            }
         }
     } else {
         $action = if ($isUninstallMode) { "Uninstalling" } else { "Installing" }
