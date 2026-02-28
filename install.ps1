@@ -714,7 +714,7 @@ Ensure-StateDirectory
 $state = Load-InstallerState
 Refresh-PackageInstallStatus -PackageList $packages
 
-while ($true) {
+:MainMenuLoop while ($true) {
     $choice = Show-MainMenu
 
     switch ($choice) {
@@ -786,7 +786,7 @@ while ($true) {
         }
         '5' {
             Write-Host 'Exiting.' -ForegroundColor Yellow
-            break
+            break MainMenuLoop
         }
         default {
             Write-Host 'Invalid choice. Use 1-5.' -ForegroundColor Red
