@@ -426,10 +426,41 @@ function Test-PackageInstalled {
 }
 
 function Refresh-PackageInstallStatus {
-    param([array]$PackageList)
+    param(
+        [array]$PackageList,
+        [string]$Reason = 'Status refresh',
+        [switch]$Quiet
+    )
 
-    foreach ($pkg in $PackageList) {
+    if (-not $PackageList) {
+        return
+    }
+
+    $total = $PackageList.Count
+    if ($total -le 0) {
+        return
+    }
+
+    if (-not $Quiet) {
+        Write-Host "Refreshing install status: $Reason" -ForegroundColor DarkCyan
+        Write-Host 'Please wait. Chocolatey local checks can take ~1-2 seconds per tool.' -ForegroundColor DarkGray
+    }
+
+    for ($i = 0; $i -lt $total; $i++) {
+        $pkg = $PackageList[$i]
+        $checkMethod = if ($pkg.CustomInstall) { 'Checking local custom files' } else { 'Querying Chocolatey local package list' }
+        $statusText = "[$($i + 1)/$total] $($pkg.DisplayName) - $checkMethod"
+        $percent = [int](($i / $total) * 100)
+
+        Write-Progress -Id 1 -Activity 'Scanning installed tools' -Status $statusText -PercentComplete $percent
         $pkg['Installed'] = Test-PackageInstalled -Package $pkg
+    }
+
+    Write-Progress -Id 1 -Activity 'Scanning installed tools' -Status 'Completed' -PercentComplete 100
+    Write-Progress -Id 1 -Activity 'Scanning installed tools' -Completed
+
+    if (-not $Quiet) {
+        Write-Host 'Status scan complete.' -ForegroundColor DarkCyan
     }
 }
 
@@ -712,14 +743,14 @@ function Update-StateAfterAction {
 # Runtime
 Ensure-StateDirectory
 $state = Load-InstallerState
-Refresh-PackageInstallStatus -PackageList $packages
+Refresh-PackageInstallStatus -PackageList $packages -Reason 'Initial startup'
 
 :MainMenuLoop while ($true) {
     $choice = Show-MainMenu
 
     switch ($choice) {
         '1' {
-            Refresh-PackageInstallStatus -PackageList $packages
+            Refresh-PackageInstallStatus -PackageList $packages -Reason 'Preparing install menu'
             foreach ($pkg in $packages) {
                 $pkg['Selected'] = $pkg.DefaultInstall -and (-not $pkg.Installed)
             }
@@ -731,7 +762,7 @@ Refresh-PackageInstallStatus -PackageList $packages
 
             Clear-Host
             Invoke-InstallSelected -SelectedPackages $selected
-            Refresh-PackageInstallStatus -PackageList $packages
+            Refresh-PackageInstallStatus -PackageList $packages -Reason 'Verifying installed tools after installation'
             Update-StateAfterAction -State $state -Action 'install' -PackageList $packages
             Save-InstallerState -State $state
 
@@ -740,7 +771,7 @@ Refresh-PackageInstallStatus -PackageList $packages
             $null = $host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
         }
         '2' {
-            Refresh-PackageInstallStatus -PackageList $packages
+            Refresh-PackageInstallStatus -PackageList $packages -Reason 'Preparing remove menu'
             $installedOnly = @($packages | Where-Object { $_.Installed })
 
             if ($installedOnly.Count -eq 0) {
@@ -761,7 +792,7 @@ Refresh-PackageInstallStatus -PackageList $packages
 
             Clear-Host
             Invoke-UninstallSelected -SelectedPackages $selected
-            Refresh-PackageInstallStatus -PackageList $packages
+            Refresh-PackageInstallStatus -PackageList $packages -Reason 'Verifying installed tools after removal'
             Update-StateAfterAction -State $state -Action 'remove' -PackageList $packages
             Save-InstallerState -State $state
 
@@ -771,9 +802,9 @@ Refresh-PackageInstallStatus -PackageList $packages
         }
         '3' {
             Clear-Host
-            Refresh-PackageInstallStatus -PackageList $packages
+            Refresh-PackageInstallStatus -PackageList $packages -Reason 'Collecting installed tools before update-all'
             Invoke-UpdateAllInstalled -PackageList $packages
-            Refresh-PackageInstallStatus -PackageList $packages
+            Refresh-PackageInstallStatus -PackageList $packages -Reason 'Verifying installed tools after update-all'
             Update-StateAfterAction -State $state -Action 'update-all' -PackageList $packages
             Save-InstallerState -State $state
 
@@ -782,7 +813,7 @@ Refresh-PackageInstallStatus -PackageList $packages
             $null = $host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
         }
         '4' {
-            Refresh-PackageInstallStatus -PackageList $packages
+            Refresh-PackageInstallStatus -PackageList $packages -Reason 'Manual refresh from main menu'
         }
         '5' {
             Write-Host 'Exiting.' -ForegroundColor Yellow
