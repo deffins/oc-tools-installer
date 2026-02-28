@@ -22,17 +22,17 @@ $stateFile = Join-Path $stateDir 'state.json'
 
 # Package definitions
 $packages = @(
-    @{ Name='hwinfo'; DisplayName='HWiNFO'; Description='Hardware monitoring & diagnostics'; DefaultInstall=$true; CustomInstall=$false },
-    @{ Name='cpu-z.portable'; DisplayName='CPU-Z'; Description='CPU information & monitoring'; DefaultInstall=$true; CustomInstall=$false },
-    @{ Name='gpu-z'; DisplayName='GPU-Z'; Description='Graphics card information'; DefaultInstall=$true; CustomInstall=$false },
+    @{ Name='hwinfo'; DisplayName='HWiNFO'; Description='Hardware monitoring & diagnostics'; DefaultInstall=$false; CustomInstall=$false },
+    @{ Name='cpu-z.portable'; DisplayName='CPU-Z'; Description='CPU information & monitoring'; DefaultInstall=$false; CustomInstall=$false },
+    @{ Name='gpu-z'; DisplayName='GPU-Z'; Description='Graphics card information'; DefaultInstall=$false; CustomInstall=$false },
     @{ Name='aida64-extreme'; DisplayName='AIDA64 Extreme'; Description='System info & benchmarks (30-day trial)'; DefaultInstall=$false; CustomInstall=$false },
-    @{ Name='prime95'; DisplayName='Prime95'; Description='CPU stress testing'; DefaultInstall=$true; CustomInstall=$false },
-    @{ Name='occt'; DisplayName='OCCT'; Description='CPU/GPU/RAM stability testing'; DefaultInstall=$true; CustomInstall=$false },
-    @{ Name='furmark'; DisplayName='FurMark'; Description='GPU stress test & burn-in'; DefaultInstall=$true; CustomInstall=$false },
-    @{ Name='cinebench'; DisplayName='Cinebench 2024'; Description='CPU rendering benchmark'; DefaultInstall=$true; CustomInstall=$false },
-    @{ Name='cinebench-r23'; DisplayName='Cinebench R23'; Description='CPU rendering benchmark (custom install)'; DefaultInstall=$true; CustomInstall=$true },
-    @{ Name='testmem5'; DisplayName='TestMem5'; Description='RAM stability testing (custom install)'; DefaultInstall=$true; CustomInstall=$true },
-    @{ Name='crystaldiskmark.portable'; DisplayName='CrystalDiskMark'; Description='SSD/HDD benchmark tool'; DefaultInstall=$true; CustomInstall=$false }
+    @{ Name='prime95'; DisplayName='Prime95'; Description='CPU stress testing'; DefaultInstall=$false; CustomInstall=$false },
+    @{ Name='occt'; DisplayName='OCCT'; Description='CPU/GPU/RAM stability testing'; DefaultInstall=$false; CustomInstall=$false },
+    @{ Name='furmark'; DisplayName='FurMark'; Description='GPU stress test & burn-in'; DefaultInstall=$false; CustomInstall=$false },
+    @{ Name='cinebench'; DisplayName='Cinebench 2024'; Description='CPU rendering benchmark'; DefaultInstall=$false; CustomInstall=$false },
+    @{ Name='cinebench-r23'; DisplayName='Cinebench R23'; Description='CPU rendering benchmark (custom install)'; DefaultInstall=$false; CustomInstall=$true },
+    @{ Name='testmem5'; DisplayName='TestMem5'; Description='RAM stability testing (custom install)'; DefaultInstall=$false; CustomInstall=$true },
+    @{ Name='crystaldiskmark.portable'; DisplayName='CrystalDiskMark'; Description='SSD/HDD benchmark tool'; DefaultInstall=$false; CustomInstall=$false }
 )
 
 $shortcutCandidates = @{
