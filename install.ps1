@@ -371,30 +371,28 @@ function Uninstall-CinebenchR23 {
     Write-Host ''
 }
 
-function Test-ChocoPackageInstalled {
-    param([string]$PackageName)
+function Get-ChocoInstalledPackageMap {
+    $packageMap = @{}
 
     if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
-        return $false
+        return $packageMap
     }
 
     try {
-        $output = choco list --local-only --exact $PackageName --limit-output 2>$null
-        if (-not $output) {
-            return $false
-        }
-
-        $escaped = [regex]::Escape($PackageName)
+        $output = choco list --local-only --limit-output 2>$null
         foreach ($line in $output) {
-            if ($line -match "^${escaped}\|") {
-                return $true
+            if ($line -match '^([^|]+)\|') {
+                $name = $matches[1].Trim().ToLowerInvariant()
+                if (-not [string]::IsNullOrWhiteSpace($name)) {
+                    $packageMap[$name] = $true
+                }
             }
         }
-
-        return $false
     } catch {
-        return $false
+        # If Chocolatey query fails, return empty map and keep script running.
     }
+
+    return $packageMap
 }
 
 function Test-CustomPackageInstalled {
@@ -415,16 +413,6 @@ function Test-CustomPackageInstalled {
     }
 }
 
-function Test-PackageInstalled {
-    param([hashtable]$Package)
-
-    if ($Package.CustomInstall) {
-        return (Test-CustomPackageInstalled -PackageName $Package.Name)
-    }
-
-    return (Test-ChocoPackageInstalled -PackageName $Package.Name)
-}
-
 function Refresh-PackageInstallStatus {
     param(
         [array]$PackageList,
@@ -441,19 +429,27 @@ function Refresh-PackageInstallStatus {
         return
     }
 
+    Write-Progress -Id 1 -Activity 'Scanning installed tools' -Status 'Loading local Chocolatey package cache...' -PercentComplete 0
+    $installedChocoPackages = Get-ChocoInstalledPackageMap
+
     if (-not $Quiet) {
         Write-Host "Refreshing install status: $Reason" -ForegroundColor DarkCyan
-        Write-Host 'Please wait. Chocolatey local checks can take ~1-2 seconds per tool.' -ForegroundColor DarkGray
+        Write-Host 'Please wait. Building Chocolatey local package cache once, then matching tools.' -ForegroundColor DarkGray
     }
 
     for ($i = 0; $i -lt $total; $i++) {
         $pkg = $PackageList[$i]
-        $checkMethod = if ($pkg.CustomInstall) { 'Checking local custom files' } else { 'Querying Chocolatey local package list' }
+        $checkMethod = if ($pkg.CustomInstall) { 'Checking local custom files' } else { 'Matching against cached Chocolatey list' }
         $statusText = "[$($i + 1)/$total] $($pkg.DisplayName) - $checkMethod"
-        $percent = [int](($i / $total) * 100)
+        $percent = [int]((($i + 1) / $total) * 100)
 
         Write-Progress -Id 1 -Activity 'Scanning installed tools' -Status $statusText -PercentComplete $percent
-        $pkg['Installed'] = Test-PackageInstalled -Package $pkg
+
+        if ($pkg.CustomInstall) {
+            $pkg['Installed'] = Test-CustomPackageInstalled -PackageName $pkg.Name
+        } else {
+            $pkg['Installed'] = $installedChocoPackages.ContainsKey($pkg.Name.ToLowerInvariant())
+        }
     }
 
     Write-Progress -Id 1 -Activity 'Scanning installed tools' -Status 'Completed' -PercentComplete 100
