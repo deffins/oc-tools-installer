@@ -1,448 +1,40 @@
-# OC & Benchmarking Tools Installer/Uninstaller
-# Description: Installs or uninstalls Chocolatey and essential overclocking/benchmarking tools
+# OC & Benchmark Tools Manager
+# Features:
+# - Install selected tools (Space marks, Enter starts)
+# - Remove selected installed tools
+# - Update all installed supported tools
+# - Detect previous runs on this computer via state file
+
+$ErrorActionPreference = 'Stop'
+$scriptVersion = '2.0.0'
 
 # Check if running as Administrator
-if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-    Write-Host "ERROR: This script must be run as Administrator!" -ForegroundColor Red
-    Write-Host "Right-click PowerShell and select 'Run as Administrator'" -ForegroundColor Yellow
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
+    Write-Host 'ERROR: This script must be run as Administrator.' -ForegroundColor Red
+    Write-Host "Right-click PowerShell and select 'Run as Administrator'." -ForegroundColor Yellow
     pause
     exit 1
 }
 
-# Mode selection
-Clear-Host
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  OC & Benchmark Tools Manager" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "Select mode:" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "  [1] Install tools" -ForegroundColor Green
-Write-Host "  [2] Uninstall tools" -ForegroundColor Red
-Write-Host "  [3] Exit" -ForegroundColor Gray
-Write-Host ""
-$modeChoice = Read-Host "Enter your choice (1-3)"
-
-if ($modeChoice -eq "3") {
-    Write-Host "Exiting..." -ForegroundColor Yellow
-    exit 0
-}
-
-$isUninstallMode = ($modeChoice -eq "2")
+# State file used to detect if this script was previously run on this computer
+$stateDir = Join-Path $env:ProgramData 'FonsLv\OcTools'
+$stateFile = Join-Path $stateDir 'state.json'
 
 # Package definitions
-# Format: Name, Description, Selected, CustomInstall (optional)
-# Source: Chocolatey Community Repository (https://community.chocolatey.org/) unless marked as "custom install"
 $packages = @(
-    # ========================================
-    # Monitoring & Diagnostics
-    # ========================================
-
-    # HWiNFO v8.30 - Installer version
-    # Source: REALiX (https://www.hwinfo.com/)
-    @{Name="hwinfo"; Description="HWiNFO - Hardware monitoring & diagnostics"; Selected=$true},
-
-    # CPU-Z v2.17 - Portable/ZIP version
-    # Source: CPUID (https://www.cpuid.com/softwares/cpu-z.html)
-    @{Name="cpu-z.portable"; Description="CPU-Z - CPU information & monitoring"; Selected=$true},
-
-    # GPU-Z v2.68 - Portable/ZIP version
-    # Source: TechPowerUp (https://www.techpowerup.com/gpuz/)
-    @{Name="gpu-z"; Description="GPU-Z - Graphics card information"; Selected=$true},
-
-    # AIDA64 Extreme - Installer version (30-day trial)
-    # Source: FinalWire (https://www.aida64.com/)
-    @{Name="aida64-extreme"; Description="AIDA64 Extreme - System info & benchmarks (30-day trial)"; Selected=$false},
-
-    # ========================================
-    # Stress Testing & Benchmarks
-    # ========================================
-
-    # Prime95 v30.19 - Installer version
-    # Source: GIMPS / Mersenne Research (https://www.mersenne.org/download/)
-    @{Name="prime95"; Description="Prime95 - CPU stress testing"; Selected=$true},
-
-    # OCCT v13.1.6 - Installer version
-    # Source: OCCT (https://www.ocbase.com/)
-    @{Name="occt"; Description="OCCT - CPU/GPU/RAM stability testing"; Selected=$true},
-
-    # FurMark v1.38.1 - Installer version
-    # Source: Geeks3D (https://geeks3d.com/furmark/)
-    @{Name="furmark"; Description="FurMark - GPU stress test & burn-in"; Selected=$true},
-
-    # Cinebench 2024 v2024.1.0 - Installer version
-    # Source: Maxon (https://www.maxon.net/en/cinebench)
-    @{Name="cinebench"; Description="Cinebench 2024 - CPU rendering benchmark"; Selected=$true},
-
-    # Cinebench R23 v23.200 - Custom install (ZIP extraction)
-    # Source: Maxon Direct Download (https://installer.maxon.net/cinebench/CinebenchR23.zip)
-    @{Name="cinebench-r23"; Description="Cinebench R23 - CPU rendering benchmark (custom install)"; Selected=$true; CustomInstall=$true},
-
-    # TestMem5 v0.13.1 - Custom install (7z extraction)
-    # Source: GitHub CoolCmd/TestMem5 (https://github.com/CoolCmd/TestMem5/releases)
-    @{Name="testmem5"; Description="TestMem5 - RAM stability testing (custom install)"; Selected=$true; CustomInstall=$true},
-
-    # ========================================
-    # Storage Benchmarks
-    # ========================================
-
-    # CrystalDiskMark - Portable/ZIP version
-    # Source: Crystal Dew World (https://crystalmark.info/en/software/crystaldiskmark/)
-    @{Name="crystaldiskmark.portable"; Description="CrystalDiskMark - SSD/HDD benchmark tool"; Selected=$true}
-
-    # ========================================
-    # Overclocking Utilities
-    # ========================================
-    # NOTE: MSI Afterburner removed by request (rarely used / causes CDN issues)
+    @{ Name='hwinfo'; DisplayName='HWiNFO'; Description='Hardware monitoring & diagnostics'; DefaultInstall=$true; CustomInstall=$false },
+    @{ Name='cpu-z.portable'; DisplayName='CPU-Z'; Description='CPU information & monitoring'; DefaultInstall=$true; CustomInstall=$false },
+    @{ Name='gpu-z'; DisplayName='GPU-Z'; Description='Graphics card information'; DefaultInstall=$true; CustomInstall=$false },
+    @{ Name='aida64-extreme'; DisplayName='AIDA64 Extreme'; Description='System info & benchmarks (30-day trial)'; DefaultInstall=$false; CustomInstall=$false },
+    @{ Name='prime95'; DisplayName='Prime95'; Description='CPU stress testing'; DefaultInstall=$true; CustomInstall=$false },
+    @{ Name='occt'; DisplayName='OCCT'; Description='CPU/GPU/RAM stability testing'; DefaultInstall=$true; CustomInstall=$false },
+    @{ Name='furmark'; DisplayName='FurMark'; Description='GPU stress test & burn-in'; DefaultInstall=$true; CustomInstall=$false },
+    @{ Name='cinebench'; DisplayName='Cinebench 2024'; Description='CPU rendering benchmark'; DefaultInstall=$true; CustomInstall=$false },
+    @{ Name='cinebench-r23'; DisplayName='Cinebench R23'; Description='CPU rendering benchmark (custom install)'; DefaultInstall=$true; CustomInstall=$true },
+    @{ Name='testmem5'; DisplayName='TestMem5'; Description='RAM stability testing (custom install)'; DefaultInstall=$true; CustomInstall=$true },
+    @{ Name='crystaldiskmark.portable'; DisplayName='CrystalDiskMark'; Description='SSD/HDD benchmark tool'; DefaultInstall=$true; CustomInstall=$false }
 )
 
-$currentIndex = 0
-$totalItems = $packages.Count + 1  # +1 for "Start Installation"
-
-function Show-Menu {
-    Clear-Host
-    $modeTitle = if ($isUninstallMode) { "Uninstaller" } else { "Installer" }
-    $actionText = if ($isUninstallMode) { "uninstall" } else { "install" }
-
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "  OC & Benchmark Tools $modeTitle" -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "Select tools to ${actionText}:" -ForegroundColor Yellow
-    Write-Host "(Use UP/DOWN arrows, SPACE to toggle, ENTER to select, ESC to exit)" -ForegroundColor Gray
-    Write-Host ""
-    
-    for ($i = 0; $i -lt $packages.Count; $i++) {
-        $checkbox = if ($packages[$i].Selected) { "[X]" } else { "[ ]" }
-        $prefix = if ($i -eq $currentIndex) { ">" } else { " " }
-        
-        if ($i -eq $currentIndex) {
-            Write-Host "$prefix $checkbox $($packages[$i].Description)" -ForegroundColor Green
-        } else {
-            Write-Host "$prefix $checkbox $($packages[$i].Description)"
-        }
-    }
-    
-    Write-Host ""
-    Write-Host "----------------------------------------" -ForegroundColor DarkGray
-    
-    # "Start Installation/Uninstallation" option
-    $startText = if ($isUninstallMode) { "START UNINSTALLATION" } else { "START INSTALLATION" }
-    $startColor = if ($isUninstallMode) { "Red" } else { "Yellow" }
-    $prefix = if ($currentIndex -eq $packages.Count) { ">" } else { " " }
-    if ($currentIndex -eq $packages.Count) {
-        Write-Host "$prefix [ $startText ]" -ForegroundColor $startColor -BackgroundColor DarkGreen
-    } else {
-        Write-Host "$prefix [ $startText ]" -ForegroundColor $startColor
-    }
-    
-    Write-Host ""
-    $selectedCount = ($packages | Where-Object { $_.Selected }).Count
-    Write-Host "Selected: $selectedCount / $($packages.Count)" -ForegroundColor Cyan
-}
-
-# Interactive menu loop
-:MenuLoop while ($true) {
-    Show-Menu
-
-    $key = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-
-    switch ($key.VirtualKeyCode) {
-        38 { # Up arrow
-            $currentIndex = if ($currentIndex -gt 0) { $currentIndex - 1 } else { $totalItems - 1 }
-        }
-        40 { # Down arrow
-            $currentIndex = if ($currentIndex -lt $totalItems - 1) { $currentIndex + 1 } else { 0 }
-        }
-        32 { # Space - only toggle if not on "Start Installation"
-            if ($currentIndex -lt $packages.Count) {
-                $packages[$currentIndex].Selected = -not $packages[$currentIndex].Selected
-            }
-        }
-        13 { # Enter - toggle package or start installation
-            if ($currentIndex -eq $packages.Count) {
-                break MenuLoop
-            } else {
-                # Toggle package selection like Space does
-                $packages[$currentIndex].Selected = -not $packages[$currentIndex].Selected
-            }
-        }
-        27 { # Escape
-            Clear-Host
-            Write-Host "Installation cancelled." -ForegroundColor Yellow
-            exit 0
-        }
-    }
-}
-
-# Get selected packages
-$selectedPackages = $packages | Where-Object { $_.Selected }
-
-if ($selectedPackages.Count -eq 0) {
-    Clear-Host
-    Write-Host "No packages selected. Exiting." -ForegroundColor Yellow
-    pause
-    exit 0
-}
-
-# Start installation/uninstallation
-Clear-Host
-$actionTitle = if ($isUninstallMode) { "Uninstallation" } else { "Installation" }
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Starting $actionTitle" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
-
-if (-not $isUninstallMode) {
-    # Install Chocolatey if not present (only for install mode)
-    Write-Host "Checking for Chocolatey..." -ForegroundColor Yellow
-    if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
-        Write-Host "Installing Chocolatey..." -ForegroundColor Green
-        Set-ExecutionPolicy Bypass -Scope Process -Force
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-        # Refresh environment variables
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-
-        Write-Host "Chocolatey installed successfully!" -ForegroundColor Green
-    } else {
-        Write-Host "Chocolatey is already installed." -ForegroundColor Green
-    }
-}
-
-Write-Host ""
-$actionVerb = if ($isUninstallMode) { "Uninstalling" } else { "Installing" }
-Write-Host "$actionVerb selected packages..." -ForegroundColor Yellow
-Write-Host ""
-
-# Function to install TestMem5
-function Install-TestMem5 {
-    Write-Host "Installing TestMem5 (custom install)..." -ForegroundColor Cyan
-
-    # Ensure 7zip is installed
-    if (!(Get-Command 7z -ErrorAction SilentlyContinue)) {
-        Write-Host "  Installing 7zip (required for extraction)..." -ForegroundColor Yellow
-        choco install 7zip.install -y
-        # Refresh PATH
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-    }
-
-    $downloadUrl = "https://github.com/CoolCmd/TestMem5/releases/download/v0.13.1/TestMem5.7z"
-    $appDataPath = [Environment]::GetFolderPath("ApplicationData")
-    $installPath = Join-Path $appDataPath "TestMem5"
-    $downloadFile = Join-Path $env:TEMP "TestMem5.7z"
-
-    try {
-        # Download TestMem5 with progress
-        Write-Host "  Downloading TestMem5..." -ForegroundColor Yellow
-
-        $webClient = New-Object System.Net.WebClient
-        $webClient.Headers.Add("User-Agent", "PowerShell")
-
-        # Progress event handler
-        $progressHandler = {
-            param($sender, $e)
-            $percent = [math]::Round(($e.BytesReceived / $e.TotalBytesToReceive) * 100, 0)
-            $received = [math]::Round($e.BytesReceived / 1MB, 2)
-            $total = [math]::Round($e.TotalBytesToReceive / 1MB, 2)
-            Write-Progress -Activity "Downloading TestMem5" -Status "$received MB / $total MB" -PercentComplete $percent
-        }
-
-        Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged -Action $progressHandler | Out-Null
-
-        try {
-            $webClient.DownloadFileTaskAsync($downloadUrl, $downloadFile).Wait()
-            Write-Progress -Activity "Downloading TestMem5" -Completed
-            Write-Host "  Download completed!" -ForegroundColor Green
-        } finally {
-            $webClient.Dispose()
-            Get-EventSubscriber | Where-Object { $_.SourceObject -eq $webClient } | Unregister-Event -Force
-        }
-
-        # Create installation directory
-        if (!(Test-Path $installPath)) {
-            New-Item -ItemType Directory -Path $installPath -Force | Out-Null
-        }
-
-        # Extract with 7zip
-        Write-Host "  Extracting TestMem5..." -ForegroundColor Yellow
-        & 7z x "$downloadFile" -o"$installPath" -y | Out-Null
-
-        # Create desktop shortcut
-        $desktopPath = [Environment]::GetFolderPath("Desktop")
-        $exePath = Join-Path $installPath "TM5.exe"
-
-        if (Test-Path $exePath) {
-            $shortcutPath = Join-Path $desktopPath "TestMem5.lnk"
-            $WScriptShell = New-Object -ComObject WScript.Shell
-            $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
-            $shortcut.TargetPath = $exePath
-            $shortcut.WorkingDirectory = $installPath
-            $shortcut.Description = "TestMem5 - RAM Stability Testing"
-            $shortcut.Save()
-
-            Write-Host "  TestMem5 installed to: $installPath" -ForegroundColor Green
-            Write-Host "  Desktop shortcut created!" -ForegroundColor Green
-        } else {
-            Write-Host "  Warning: TM5.exe not found after extraction" -ForegroundColor Red
-        }
-
-        # Cleanup
-        Remove-Item $downloadFile -Force -ErrorAction SilentlyContinue
-
-    } catch {
-        Write-Host "  Error installing TestMem5: $_" -ForegroundColor Red
-    }
-
-    Write-Host ""
-}
-
-# Function to uninstall TestMem5
-function Uninstall-TestMem5 {
-    Write-Host "Uninstalling TestMem5 (custom uninstall)..." -ForegroundColor Cyan
-
-    $appDataPath = [Environment]::GetFolderPath("ApplicationData")
-    $installPath = Join-Path $appDataPath "TestMem5"
-    $desktopPath = [Environment]::GetFolderPath("Desktop")
-    $shortcutPath = Join-Path $desktopPath "TestMem5.lnk"
-
-    try {
-        # Remove desktop shortcut
-        if (Test-Path $shortcutPath) {
-            Remove-Item $shortcutPath -Force
-            Write-Host "  Desktop shortcut removed" -ForegroundColor Green
-        }
-
-        # Remove installation directory
-        if (Test-Path $installPath) {
-            Remove-Item $installPath -Recurse -Force
-            Write-Host "  TestMem5 folder removed from: $installPath" -ForegroundColor Green
-        } else {
-            Write-Host "  TestMem5 folder not found (may already be uninstalled)" -ForegroundColor Yellow
-        }
-
-    } catch {
-        Write-Host "  Error uninstalling TestMem5: $_" -ForegroundColor Red
-    }
-
-    Write-Host ""
-}
-
-# Function to install Cinebench R23
-function Install-CinebenchR23 {
-    Write-Host "Installing Cinebench R23 (custom install)..." -ForegroundColor Cyan
-
-    # Ensure 7zip is installed
-    if (!(Get-Command 7z -ErrorAction SilentlyContinue)) {
-        Write-Host "  Installing 7zip (required for extraction)..." -ForegroundColor Yellow
-        choco install 7zip.install -y
-        # Refresh PATH
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-    }
-
-    $downloadUrl = "https://installer.maxon.net/cinebench/CinebenchR23.zip"
-    $appDataPath = [Environment]::GetFolderPath("ApplicationData")
-    $installPath = Join-Path $appDataPath "CinebenchR23"
-    $downloadFile = Join-Path $env:TEMP "CinebenchR23.zip"
-
-    try {
-        # Download Cinebench R23 with progress
-        Write-Host "  Downloading Cinebench R23..." -ForegroundColor Yellow
-
-        $webClient = New-Object System.Net.WebClient
-        $webClient.Headers.Add("User-Agent", "PowerShell")
-
-        # Progress event handler
-        $progressHandler = {
-            param($sender, $e)
-            $percent = [math]::Round(($e.BytesReceived / $e.TotalBytesToReceive) * 100, 0)
-            $received = [math]::Round($e.BytesReceived / 1MB, 2)
-            $total = [math]::Round($e.TotalBytesToReceive / 1MB, 2)
-            Write-Progress -Activity "Downloading Cinebench R23" -Status "$received MB / $total MB" -PercentComplete $percent
-        }
-
-        Register-ObjectEvent -InputObject $webClient -EventName DownloadProgressChanged -Action $progressHandler | Out-Null
-
-        try {
-            $webClient.DownloadFileTaskAsync($downloadUrl, $downloadFile).Wait()
-            Write-Progress -Activity "Downloading Cinebench R23" -Completed
-            Write-Host "  Download completed!" -ForegroundColor Green
-        } finally {
-            $webClient.Dispose()
-            Get-EventSubscriber | Where-Object { $_.SourceObject -eq $webClient } | Unregister-Event -Force
-        }
-
-        # Create installation directory
-        if (!(Test-Path $installPath)) {
-            New-Item -ItemType Directory -Path $installPath -Force | Out-Null
-        }
-
-        # Extract with 7zip
-        Write-Host "  Extracting Cinebench R23..." -ForegroundColor Yellow
-        & 7z x "$downloadFile" -o"$installPath" -y | Out-Null
-
-        # Create desktop shortcut
-        $desktopPath = [Environment]::GetFolderPath("Desktop")
-        $exePath = Join-Path $installPath "Cinebench.exe"
-
-        if (Test-Path $exePath) {
-            $shortcutPath = Join-Path $desktopPath "Cinebench R23.lnk"
-            $WScriptShell = New-Object -ComObject WScript.Shell
-            $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
-            $shortcut.TargetPath = $exePath
-            $shortcut.WorkingDirectory = $installPath
-            $shortcut.Description = "Cinebench R23 - CPU Rendering Benchmark"
-            $shortcut.Save()
-
-            Write-Host "  Cinebench R23 installed to: $installPath" -ForegroundColor Green
-            Write-Host "  Desktop shortcut created!" -ForegroundColor Green
-        } else {
-            Write-Host "  Warning: Cinebench.exe not found after extraction" -ForegroundColor Red
-        }
-
-        # Cleanup
-        Remove-Item $downloadFile -Force -ErrorAction SilentlyContinue
-
-    } catch {
-        Write-Host "  Error installing Cinebench R23: $_" -ForegroundColor Red
-    }
-
-    Write-Host ""
-}
-
-# Function to uninstall Cinebench R23
-function Uninstall-CinebenchR23 {
-    Write-Host "Uninstalling Cinebench R23 (custom uninstall)..." -ForegroundColor Cyan
-
-    $appDataPath = [Environment]::GetFolderPath("ApplicationData")
-    $installPath = Join-Path $appDataPath "CinebenchR23"
-    $desktopPath = [Environment]::GetFolderPath("Desktop")
-    $shortcutPath = Join-Path $desktopPath "Cinebench R23.lnk"
-
-    try {
-        # Remove desktop shortcut
-        if (Test-Path $shortcutPath) {
-            Remove-Item $shortcutPath -Force
-            Write-Host "  Desktop shortcut removed" -ForegroundColor Green
-        }
-
-        # Remove installation directory
-        if (Test-Path $installPath) {
-            Remove-Item $installPath -Recurse -Force
-            Write-Host "  Cinebench R23 folder removed from: $installPath" -ForegroundColor Green
-        } else {
-            Write-Host "  Cinebench R23 folder not found (may already be uninstalled)" -ForegroundColor Yellow
-        }
-
-    } catch {
-        Write-Host "  Error uninstalling Cinebench R23: $_" -ForegroundColor Red
-    }
-
-    Write-Host ""
-}
-
-# Shortcut helpers: create/remove desktop shortcuts for installed packages
 $shortcutCandidates = @{
     'hwinfo' = @('hwinfo.exe','HWiNFO64.EXE')
     'cpu-z.portable' = @('cpuz.exe','CPU-Z.exe')
@@ -454,8 +46,108 @@ $shortcutCandidates = @{
     'furmark' = @('FurMark.exe','FurMark64.exe')
 }
 
-function Get-ShortcutDisplayName($pkgName) {
-    switch ($pkgName) {
+function Ensure-StateDirectory {
+    if (-not (Test-Path $stateDir)) {
+        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+    }
+}
+
+function New-DefaultState {
+    return [ordered]@{
+        Version = $scriptVersion
+        ComputerName = $env:COMPUTERNAME
+        FirstRun = $null
+        LastRun = $null
+        LastAction = $null
+        RunCount = 0
+        LastKnownInstalled = @()
+    }
+}
+
+function Load-InstallerState {
+    if (-not (Test-Path $stateFile)) {
+        return (New-DefaultState)
+    }
+
+    try {
+        $raw = Get-Content -Path $stateFile -Raw
+        if ([string]::IsNullOrWhiteSpace($raw)) {
+            return (New-DefaultState)
+        }
+
+        $state = $raw | ConvertFrom-Json -AsHashtable
+        if (-not $state) {
+            return (New-DefaultState)
+        }
+
+        if (-not $state.ContainsKey('Version')) { $state['Version'] = $scriptVersion }
+        if (-not $state.ContainsKey('ComputerName')) { $state['ComputerName'] = $env:COMPUTERNAME }
+        if (-not $state.ContainsKey('FirstRun')) { $state['FirstRun'] = $null }
+        if (-not $state.ContainsKey('LastRun')) { $state['LastRun'] = $null }
+        if (-not $state.ContainsKey('LastAction')) { $state['LastAction'] = $null }
+        if (-not $state.ContainsKey('RunCount')) { $state['RunCount'] = 0 }
+        if (-not $state.ContainsKey('LastKnownInstalled')) { $state['LastKnownInstalled'] = @() }
+
+        return $state
+    } catch {
+        Write-Host "WARNING: Could not parse state file: $stateFile" -ForegroundColor Yellow
+        return (New-DefaultState)
+    }
+}
+
+function Save-InstallerState {
+    param(
+        [hashtable]$State
+    )
+
+    Ensure-StateDirectory
+    $json = $State | ConvertTo-Json -Depth 8
+    Set-Content -Path $stateFile -Value $json -Encoding UTF8
+}
+
+function Refresh-Path {
+    $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
+    $userPath = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+    $env:Path = "$machinePath;$userPath"
+}
+
+function Ensure-Chocolatey {
+    if (Get-Command choco -ErrorAction SilentlyContinue) {
+        return
+    }
+
+    Write-Host 'Chocolatey not found. Installing Chocolatey...' -ForegroundColor Yellow
+    Set-ExecutionPolicy Bypass -Scope Process -Force
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+    Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+    Refresh-Path
+
+    if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+        throw 'Chocolatey installation failed.'
+    }
+
+    Write-Host 'Chocolatey installed successfully.' -ForegroundColor Green
+}
+
+function Ensure-SevenZip {
+    if (Get-Command 7z -ErrorAction SilentlyContinue) {
+        return
+    }
+
+    Ensure-Chocolatey
+    Write-Host 'Installing 7-Zip (required for TestMem5 extraction)...' -ForegroundColor Yellow
+    choco install 7zip.install -y --no-progress | Out-Host
+    Refresh-Path
+
+    if (-not (Get-Command 7z -ErrorAction SilentlyContinue)) {
+        throw '7-Zip installation failed.'
+    }
+}
+
+function Get-ShortcutDisplayName {
+    param([string]$PackageName)
+
+    switch ($PackageName) {
         'cpu-z.portable' { return 'CPU-Z' }
         'hwinfo' { return 'HWiNFO' }
         'gpu-z' { return 'GPU-Z' }
@@ -464,36 +156,38 @@ function Get-ShortcutDisplayName($pkgName) {
         'crystaldiskmark.portable' { return 'CrystalDiskMark' }
         'occt' { return 'OCCT' }
         'furmark' { return 'FurMark' }
-        default { return $pkgName }
+        default { return $PackageName }
     }
 }
 
-function Create-DesktopShortcutForPackage($pkgName) {
+function Create-DesktopShortcutForPackage {
+    param([string]$PackageName)
+
     $desktopPath = [Environment]::GetFolderPath('Desktop')
-    $displayName = Get-ShortcutDisplayName $pkgName
+    $displayName = Get-ShortcutDisplayName $PackageName
     $shortcutPath = Join-Path $desktopPath "$displayName.lnk"
 
-    $candidates = @()
-    if ($shortcutCandidates.ContainsKey($pkgName)) {
-        $candidates = @($shortcutCandidates[$pkgName])
+    if (-not $shortcutCandidates.ContainsKey($PackageName)) {
+        return
     }
 
-    # Search common locations for candidate executables
-    foreach ($cand in $candidates) {
+    $candidates = @($shortcutCandidates[$PackageName])
+
+    foreach ($candidate in $candidates) {
         $pathsToCheck = @(
-            (Join-Path 'C:\ProgramData\chocolatey\bin' $cand)
-            (Join-Path (Join-Path 'C:\ProgramData\chocolatey\lib' $pkgName) (Join-Path 'tools' $cand))
-            (Join-Path (Join-Path $env:ProgramFiles $displayName) $cand)
-            (Join-Path (Join-Path ${env:ProgramFiles(x86)} $displayName) $cand)
+            (Join-Path 'C:\ProgramData\chocolatey\bin' $candidate),
+            (Join-Path (Join-Path 'C:\ProgramData\chocolatey\lib' $PackageName) (Join-Path 'tools' $candidate)),
+            (Join-Path (Join-Path $env:ProgramFiles $displayName) $candidate),
+            (Join-Path (Join-Path ${env:ProgramFiles(x86)} $displayName) $candidate)
         )
 
-        foreach ($p in $pathsToCheck) {
-            if (Test-Path $p) {
-                $WScriptShell = New-Object -ComObject WScript.Shell
-                $shortcut = $WScriptShell.CreateShortcut($shortcutPath)
-                $shortcut.TargetPath = $p
-                $shortcut.WorkingDirectory = Split-Path $p
-                $shortcut.Description = "$displayName - launched by installer"
+        foreach ($path in $pathsToCheck) {
+            if (Test-Path $path) {
+                $shell = New-Object -ComObject WScript.Shell
+                $shortcut = $shell.CreateShortcut($shortcutPath)
+                $shortcut.TargetPath = $path
+                $shortcut.WorkingDirectory = Split-Path $path
+                $shortcut.Description = "$displayName - created by OC tools manager"
                 $shortcut.Save()
                 Write-Host "  Desktop shortcut created: $shortcutPath" -ForegroundColor Green
                 return
@@ -501,62 +195,602 @@ function Create-DesktopShortcutForPackage($pkgName) {
         }
     }
 
-    Write-Host "  Could not locate executable for $pkgName to create desktop shortcut" -ForegroundColor Yellow
+    Write-Host "  Could not find executable for $PackageName. Shortcut not created." -ForegroundColor Yellow
 }
 
-function Remove-DesktopShortcutForPackage($pkgName) {
-    $displayName = Get-ShortcutDisplayName $pkgName
+function Remove-DesktopShortcutForPackage {
+    param([string]$PackageName)
+
+    $displayName = Get-ShortcutDisplayName $PackageName
     $desktopPath = [Environment]::GetFolderPath('Desktop')
     $shortcutPath = Join-Path $desktopPath "$displayName.lnk"
+
     if (Test-Path $shortcutPath) {
         Remove-Item $shortcutPath -Force -ErrorAction SilentlyContinue
         Write-Host "  Desktop shortcut removed: $shortcutPath" -ForegroundColor Green
     }
 }
 
-# Install or Uninstall each selected package
-foreach ($pkg in $selectedPackages) {
-    if ($pkg.CustomInstall) {
-        if ($pkg.Name -eq "testmem5") {
-            if ($isUninstallMode) {
-                Uninstall-TestMem5
-            } else {
-                Install-TestMem5
-            }
-        } elseif ($pkg.Name -eq "cinebench-r23") {
-            if ($isUninstallMode) {
-                Uninstall-CinebenchR23
-            } else {
-                Install-CinebenchR23
-            }
+function Download-File {
+    param(
+        [string]$Url,
+        [string]$OutFile,
+        [string]$Label
+    )
+
+    Write-Host "  Downloading $Label..." -ForegroundColor Yellow
+    Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing
+    Write-Host "  Download complete: $Label" -ForegroundColor Green
+}
+
+function Install-TestMem5 {
+    Write-Host 'Installing TestMem5 (custom install)...' -ForegroundColor Cyan
+
+    Ensure-SevenZip
+
+    $downloadUrl = 'https://github.com/CoolCmd/TestMem5/releases/download/v0.13.1/TestMem5.7z'
+    $appDataPath = [Environment]::GetFolderPath('ApplicationData')
+    $installPath = Join-Path $appDataPath 'TestMem5'
+    $downloadFile = Join-Path $env:TEMP 'TestMem5.7z'
+
+    try {
+        Download-File -Url $downloadUrl -OutFile $downloadFile -Label 'TestMem5'
+
+        if (Test-Path $installPath) {
+            Remove-Item $installPath -Recurse -Force -ErrorAction SilentlyContinue
         }
-    } else {
-        $action = if ($isUninstallMode) { "Uninstalling" } else { "Installing" }
-        Write-Host "$action $($pkg.Name)..." -ForegroundColor Cyan
-        if ($isUninstallMode) {
-            choco uninstall $pkg.Name -y
-            # remove desktop shortcut if we created one
-            Remove-DesktopShortcutForPackage $pkg.Name
+        New-Item -ItemType Directory -Path $installPath -Force | Out-Null
+
+        Write-Host '  Extracting TestMem5...' -ForegroundColor Yellow
+        & 7z x "$downloadFile" "-o$installPath" -y | Out-Null
+
+        $desktopPath = [Environment]::GetFolderPath('Desktop')
+        $exePath = Join-Path $installPath 'TM5.exe'
+
+        if (Test-Path $exePath) {
+            $shortcutPath = Join-Path $desktopPath 'TestMem5.lnk'
+            $shell = New-Object -ComObject WScript.Shell
+            $shortcut = $shell.CreateShortcut($shortcutPath)
+            $shortcut.TargetPath = $exePath
+            $shortcut.WorkingDirectory = $installPath
+            $shortcut.Description = 'TestMem5 - RAM stability testing'
+            $shortcut.Save()
+
+            Write-Host "  TestMem5 installed: $installPath" -ForegroundColor Green
+            Write-Host '  Desktop shortcut created.' -ForegroundColor Green
         } else {
-            choco install $pkg.Name -y
-            # attempt to create a desktop shortcut for the package
-            Create-DesktopShortcutForPackage $pkg.Name
+            Write-Host '  Warning: TM5.exe not found after extraction.' -ForegroundColor Yellow
         }
-        Write-Host ""
+
+        Remove-Item $downloadFile -Force -ErrorAction SilentlyContinue
+    } catch {
+        Write-Host "  Error installing TestMem5: $_" -ForegroundColor Red
+    }
+
+    Write-Host ''
+}
+
+function Uninstall-TestMem5 {
+    Write-Host 'Uninstalling TestMem5 (custom uninstall)...' -ForegroundColor Cyan
+
+    $appDataPath = [Environment]::GetFolderPath('ApplicationData')
+    $installPath = Join-Path $appDataPath 'TestMem5'
+    $desktopPath = [Environment]::GetFolderPath('Desktop')
+    $shortcutPath = Join-Path $desktopPath 'TestMem5.lnk'
+
+    try {
+        if (Test-Path $shortcutPath) {
+            Remove-Item $shortcutPath -Force
+            Write-Host '  Desktop shortcut removed.' -ForegroundColor Green
+        }
+
+        if (Test-Path $installPath) {
+            Remove-Item $installPath -Recurse -Force
+            Write-Host "  TestMem5 folder removed: $installPath" -ForegroundColor Green
+        } else {
+            Write-Host '  TestMem5 folder not found (already removed).' -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "  Error uninstalling TestMem5: $_" -ForegroundColor Red
+    }
+
+    Write-Host ''
+}
+
+function Install-CinebenchR23 {
+    Write-Host 'Installing Cinebench R23 (custom install)...' -ForegroundColor Cyan
+
+    Ensure-SevenZip
+
+    $downloadUrl = 'https://installer.maxon.net/cinebench/CinebenchR23.zip'
+    $appDataPath = [Environment]::GetFolderPath('ApplicationData')
+    $installPath = Join-Path $appDataPath 'CinebenchR23'
+    $downloadFile = Join-Path $env:TEMP 'CinebenchR23.zip'
+
+    try {
+        Download-File -Url $downloadUrl -OutFile $downloadFile -Label 'Cinebench R23'
+
+        if (Test-Path $installPath) {
+            Remove-Item $installPath -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        New-Item -ItemType Directory -Path $installPath -Force | Out-Null
+
+        Write-Host '  Extracting Cinebench R23...' -ForegroundColor Yellow
+        & 7z x "$downloadFile" "-o$installPath" -y | Out-Null
+
+        $desktopPath = [Environment]::GetFolderPath('Desktop')
+        $exePath = Join-Path $installPath 'Cinebench.exe'
+
+        if (Test-Path $exePath) {
+            $shortcutPath = Join-Path $desktopPath 'Cinebench R23.lnk'
+            $shell = New-Object -ComObject WScript.Shell
+            $shortcut = $shell.CreateShortcut($shortcutPath)
+            $shortcut.TargetPath = $exePath
+            $shortcut.WorkingDirectory = $installPath
+            $shortcut.Description = 'Cinebench R23 - CPU rendering benchmark'
+            $shortcut.Save()
+
+            Write-Host "  Cinebench R23 installed: $installPath" -ForegroundColor Green
+            Write-Host '  Desktop shortcut created.' -ForegroundColor Green
+        } else {
+            Write-Host '  Warning: Cinebench.exe not found after extraction.' -ForegroundColor Yellow
+        }
+
+        Remove-Item $downloadFile -Force -ErrorAction SilentlyContinue
+    } catch {
+        Write-Host "  Error installing Cinebench R23: $_" -ForegroundColor Red
+    }
+
+    Write-Host ''
+}
+
+function Uninstall-CinebenchR23 {
+    Write-Host 'Uninstalling Cinebench R23 (custom uninstall)...' -ForegroundColor Cyan
+
+    $appDataPath = [Environment]::GetFolderPath('ApplicationData')
+    $installPath = Join-Path $appDataPath 'CinebenchR23'
+    $desktopPath = [Environment]::GetFolderPath('Desktop')
+    $shortcutPath = Join-Path $desktopPath 'Cinebench R23.lnk'
+
+    try {
+        if (Test-Path $shortcutPath) {
+            Remove-Item $shortcutPath -Force
+            Write-Host '  Desktop shortcut removed.' -ForegroundColor Green
+        }
+
+        if (Test-Path $installPath) {
+            Remove-Item $installPath -Recurse -Force
+            Write-Host "  Cinebench R23 folder removed: $installPath" -ForegroundColor Green
+        } else {
+            Write-Host '  Cinebench R23 folder not found (already removed).' -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "  Error uninstalling Cinebench R23: $_" -ForegroundColor Red
+    }
+
+    Write-Host ''
+}
+
+function Test-ChocoPackageInstalled {
+    param([string]$PackageName)
+
+    if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+        return $false
+    }
+
+    try {
+        $output = choco list --local-only --exact $PackageName --limit-output 2>$null
+        if (-not $output) {
+            return $false
+        }
+
+        $escaped = [regex]::Escape($PackageName)
+        foreach ($line in $output) {
+            if ($line -match "^${escaped}\|") {
+                return $true
+            }
+        }
+
+        return $false
+    } catch {
+        return $false
     }
 }
 
-$completeText = if ($isUninstallMode) { "Uninstallation Complete!" } else { "Installation Complete!" }
-$listTitle = if ($isUninstallMode) { "Uninstalled tools:" } else { "Installed tools:" }
+function Test-CustomPackageInstalled {
+    param([string]$PackageName)
 
-Write-Host "========================================" -ForegroundColor Green
-Write-Host "  $completeText" -ForegroundColor Green
-Write-Host "========================================" -ForegroundColor Green
-Write-Host ""
-Write-Host "$listTitle" -ForegroundColor White
-foreach ($pkg in $selectedPackages) {
-    Write-Host "  - $($pkg.Description)" -ForegroundColor Gray
+    $appDataPath = [Environment]::GetFolderPath('ApplicationData')
+
+    switch ($PackageName) {
+        'testmem5' {
+            return (Test-Path (Join-Path $appDataPath 'TestMem5\TM5.exe'))
+        }
+        'cinebench-r23' {
+            return (Test-Path (Join-Path $appDataPath 'CinebenchR23\Cinebench.exe'))
+        }
+        default {
+            return $false
+        }
+    }
 }
-Write-Host ""
-Write-Host "Press any key to exit..." -ForegroundColor Yellow
-pause
+
+function Test-PackageInstalled {
+    param([hashtable]$Package)
+
+    if ($Package.CustomInstall) {
+        return (Test-CustomPackageInstalled -PackageName $Package.Name)
+    }
+
+    return (Test-ChocoPackageInstalled -PackageName $Package.Name)
+}
+
+function Refresh-PackageInstallStatus {
+    param([array]$PackageList)
+
+    foreach ($pkg in $PackageList) {
+        $pkg['Installed'] = Test-PackageInstalled -Package $pkg
+    }
+}
+
+function Show-UsageGuide {
+    Write-Host 'How to use this script:' -ForegroundColor Yellow
+    Write-Host '  1) Select an action from the main menu.' -ForegroundColor Gray
+    Write-Host '  2) In selection screens use:' -ForegroundColor Gray
+    Write-Host '     - UP/DOWN arrows: move cursor' -ForegroundColor Gray
+    Write-Host '     - SPACE: select or unselect a tool' -ForegroundColor Gray
+    Write-Host '     - A: toggle all selectable tools' -ForegroundColor Gray
+    Write-Host '     - ENTER: start selected action' -ForegroundColor Gray
+    Write-Host '     - ESC: cancel and return to main menu' -ForegroundColor Gray
+    Write-Host '  3) Wait for all tasks to finish.' -ForegroundColor Gray
+    Write-Host ''
+}
+
+function Show-SystemSummary {
+    param(
+        [hashtable]$State,
+        [array]$PackageList
+    )
+
+    $installed = @($PackageList | Where-Object { $_.Installed })
+    $installedCount = $installed.Count
+
+    Write-Host '========================================' -ForegroundColor Cyan
+    Write-Host "  OC & Benchmark Tools Manager v$scriptVersion" -ForegroundColor Cyan
+    Write-Host '========================================' -ForegroundColor Cyan
+    Write-Host ''
+
+    if ($State.LastRun -and $State.ComputerName -eq $env:COMPUTERNAME) {
+        Write-Host "Detected previous run on this computer ($($State.ComputerName))." -ForegroundColor Green
+        Write-Host "Last run: $($State.LastRun) | Last action: $($State.LastAction)" -ForegroundColor Green
+    } else {
+        Write-Host 'No previous local run record found for this computer.' -ForegroundColor Yellow
+    }
+
+    if ($installedCount -gt 0) {
+        Write-Host "Detected installed managed tools: $installedCount / $($PackageList.Count)" -ForegroundColor Green
+        Write-Host 'Use [2] to remove selected installed tools or [3] to update all installed tools.' -ForegroundColor Gray
+    } else {
+        Write-Host 'No managed tools currently detected as installed.' -ForegroundColor Yellow
+    }
+
+    Write-Host ''
+}
+
+function Show-MainMenu {
+    Clear-Host
+    Show-SystemSummary -State $global:state -PackageList $global:packages
+    Show-UsageGuide
+
+    Write-Host 'Main menu:' -ForegroundColor Yellow
+    Write-Host '  [1] Install tools (select with Space, Enter starts)' -ForegroundColor Green
+    Write-Host '  [2] Remove installed tools (select with Space, Enter starts)' -ForegroundColor Red
+    Write-Host '  [3] Update ALL installed tools' -ForegroundColor Cyan
+    Write-Host '  [4] Refresh installed-tools detection' -ForegroundColor White
+    Write-Host '  [5] Exit' -ForegroundColor Gray
+    Write-Host ''
+
+    return (Read-Host 'Enter choice (1-5)')
+}
+
+function Show-SelectionMenu {
+    param(
+        [array]$PackageList,
+        [string]$Title,
+        [string]$ActionLabel,
+        [switch]$OnlyInstalledSelectable
+    )
+
+    if (-not $PackageList -or $PackageList.Count -eq 0) {
+        return @()
+    }
+
+    $currentIndex = 0
+
+    while ($true) {
+        Clear-Host
+        Write-Host '========================================' -ForegroundColor Cyan
+        Write-Host "  $Title" -ForegroundColor Cyan
+        Write-Host '========================================' -ForegroundColor Cyan
+        Write-Host ''
+        Write-Host 'Controls: UP/DOWN move, SPACE toggle, A toggle all, ENTER start, ESC cancel' -ForegroundColor Gray
+        Write-Host ''
+
+        for ($i = 0; $i -lt $PackageList.Count; $i++) {
+            $pkg = $PackageList[$i]
+            $prefix = if ($i -eq $currentIndex) { '>' } else { ' ' }
+            $check = if ($pkg.Selected) { '[x]' } else { '[ ]' }
+            $status = if ($pkg.Installed) { 'installed' } else { 'not installed' }
+
+            $isLocked = $OnlyInstalledSelectable -and (-not $pkg.Installed)
+            $line = "$prefix $check $($pkg.DisplayName) - $($pkg.Description) ($status)"
+
+            if ($isLocked) {
+                if ($pkg.Selected) { $pkg['Selected'] = $false }
+                Write-Host "$line [locked]" -ForegroundColor DarkGray
+            } elseif ($i -eq $currentIndex) {
+                Write-Host $line -ForegroundColor Green
+            } else {
+                Write-Host $line
+            }
+        }
+
+        Write-Host ''
+        $selectedCount = @($PackageList | Where-Object { $_.Selected }).Count
+        Write-Host "Selected: $selectedCount / $($PackageList.Count)" -ForegroundColor Cyan
+        Write-Host "Press ENTER to start: $ActionLabel" -ForegroundColor Yellow
+
+        $key = $host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+        switch ($key.VirtualKeyCode) {
+            38 { # Up
+                $currentIndex = if ($currentIndex -gt 0) { $currentIndex - 1 } else { $PackageList.Count - 1 }
+            }
+            40 { # Down
+                $currentIndex = if ($currentIndex -lt ($PackageList.Count - 1)) { $currentIndex + 1 } else { 0 }
+            }
+            32 { # Space
+                $pkg = $PackageList[$currentIndex]
+                $canToggle = (-not $OnlyInstalledSelectable) -or $pkg.Installed
+                if ($canToggle) {
+                    $pkg['Selected'] = -not $pkg.Selected
+                }
+            }
+            65 { # A
+                $selectable = @($PackageList | Where-Object { (-not $OnlyInstalledSelectable) -or $_.Installed })
+                if ($selectable.Count -eq 0) { break }
+
+                $allSelected = ($selectable | Where-Object { $_.Selected }).Count -eq $selectable.Count
+                foreach ($item in $selectable) {
+                    $item['Selected'] = -not $allSelected
+                }
+            }
+            13 { # Enter
+                return @($PackageList | Where-Object { $_.Selected })
+            }
+            27 { # Esc
+                return $null
+            }
+        }
+    }
+}
+
+function Invoke-PackageInstall {
+    param([hashtable]$Package)
+
+    if ($Package.CustomInstall) {
+        switch ($Package.Name) {
+            'testmem5' { Install-TestMem5; return }
+            'cinebench-r23' { Install-CinebenchR23; return }
+        }
+    }
+
+    Write-Host "Installing $($Package.Name)..." -ForegroundColor Cyan
+    choco install $Package.Name -y --no-progress | Out-Host
+    Create-DesktopShortcutForPackage -PackageName $Package.Name
+    Write-Host ''
+}
+
+function Invoke-PackageUninstall {
+    param([hashtable]$Package)
+
+    if ($Package.CustomInstall) {
+        switch ($Package.Name) {
+            'testmem5' { Uninstall-TestMem5; return }
+            'cinebench-r23' { Uninstall-CinebenchR23; return }
+        }
+    }
+
+    if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+        Write-Host "Cannot uninstall $($Package.Name): Chocolatey not found." -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host "Uninstalling $($Package.Name)..." -ForegroundColor Cyan
+    choco uninstall $Package.Name -y --no-progress | Out-Host
+    Remove-DesktopShortcutForPackage -PackageName $Package.Name
+    Write-Host ''
+}
+
+function Invoke-InstallSelected {
+    param([array]$SelectedPackages)
+
+    if (-not $SelectedPackages -or $SelectedPackages.Count -eq 0) {
+        Write-Host 'No tools selected for installation.' -ForegroundColor Yellow
+        return
+    }
+
+    Ensure-Chocolatey
+
+    Write-Host ''
+    Write-Host 'Starting installation...' -ForegroundColor Yellow
+    Write-Host ''
+
+    foreach ($pkg in $SelectedPackages) {
+        Invoke-PackageInstall -Package $pkg
+    }
+
+    Write-Host 'Installation complete.' -ForegroundColor Green
+}
+
+function Invoke-UninstallSelected {
+    param([array]$SelectedPackages)
+
+    if (-not $SelectedPackages -or $SelectedPackages.Count -eq 0) {
+        Write-Host 'No tools selected for removal.' -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host ''
+    Write-Host 'Starting removal...' -ForegroundColor Yellow
+    Write-Host ''
+
+    foreach ($pkg in $SelectedPackages) {
+        Invoke-PackageUninstall -Package $pkg
+    }
+
+    Write-Host 'Removal complete.' -ForegroundColor Green
+}
+
+function Invoke-UpdateAllInstalled {
+    param([array]$PackageList)
+
+    $installedPackages = @($PackageList | Where-Object { $_.Installed })
+    if ($installedPackages.Count -eq 0) {
+        Write-Host 'No managed tools are installed. Nothing to update.' -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host 'This will update all currently installed managed tools.' -ForegroundColor Yellow
+    $confirm = Read-Host "Type YES to continue"
+    if ($confirm -ne 'YES') {
+        Write-Host 'Update canceled.' -ForegroundColor Yellow
+        return
+    }
+
+    $chocoTargets = @($installedPackages | Where-Object { -not $_.CustomInstall } | ForEach-Object { $_.Name })
+    $customTargets = @($installedPackages | Where-Object { $_.CustomInstall })
+
+    if ($chocoTargets.Count -gt 0) {
+        Ensure-Chocolatey
+        Write-Host ''
+        Write-Host 'Updating Chocolatey-managed tools...' -ForegroundColor Cyan
+        choco upgrade @chocoTargets -y --no-progress | Out-Host
+    }
+
+    if ($customTargets.Count -gt 0) {
+        Write-Host ''
+        Write-Host 'Reinstalling custom tools to latest script-supported versions...' -ForegroundColor Cyan
+        foreach ($pkg in $customTargets) {
+            Invoke-PackageInstall -Package $pkg
+        }
+    }
+
+    Write-Host 'Update-all complete.' -ForegroundColor Green
+}
+
+function Update-StateAfterAction {
+    param(
+        [hashtable]$State,
+        [string]$Action,
+        [array]$PackageList
+    )
+
+    $now = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+
+    if (-not $State.FirstRun) {
+        $State['FirstRun'] = $now
+    }
+
+    $State['Version'] = $scriptVersion
+    $State['ComputerName'] = $env:COMPUTERNAME
+    $State['LastRun'] = $now
+    $State['LastAction'] = $Action
+    $State['RunCount'] = [int]$State['RunCount'] + 1
+    $State['LastKnownInstalled'] = @($PackageList | Where-Object { $_.Installed } | ForEach-Object { $_.Name })
+}
+
+# Runtime
+Ensure-StateDirectory
+$state = Load-InstallerState
+Refresh-PackageInstallStatus -PackageList $packages
+
+while ($true) {
+    $choice = Show-MainMenu
+
+    switch ($choice) {
+        '1' {
+            Refresh-PackageInstallStatus -PackageList $packages
+            foreach ($pkg in $packages) {
+                $pkg['Selected'] = $pkg.DefaultInstall -and (-not $pkg.Installed)
+            }
+
+            $selected = Show-SelectionMenu -PackageList $packages -Title 'Install Tools' -ActionLabel 'Install selected tools'
+            if ($null -eq $selected) {
+                continue
+            }
+
+            Clear-Host
+            Invoke-InstallSelected -SelectedPackages $selected
+            Refresh-PackageInstallStatus -PackageList $packages
+            Update-StateAfterAction -State $state -Action 'install' -PackageList $packages
+            Save-InstallerState -State $state
+
+            Write-Host ''
+            Write-Host 'Press any key to return to main menu...' -ForegroundColor Yellow
+            $null = $host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+        }
+        '2' {
+            Refresh-PackageInstallStatus -PackageList $packages
+            $installedOnly = @($packages | Where-Object { $_.Installed })
+
+            if ($installedOnly.Count -eq 0) {
+                Write-Host 'No managed installed tools found to remove.' -ForegroundColor Yellow
+                Write-Host 'Press any key to continue...' -ForegroundColor Yellow
+                $null = $host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+                continue
+            }
+
+            foreach ($pkg in $installedOnly) {
+                $pkg['Selected'] = $true
+            }
+
+            $selected = Show-SelectionMenu -PackageList $installedOnly -Title 'Remove Installed Tools' -ActionLabel 'Remove selected tools' -OnlyInstalledSelectable
+            if ($null -eq $selected) {
+                continue
+            }
+
+            Clear-Host
+            Invoke-UninstallSelected -SelectedPackages $selected
+            Refresh-PackageInstallStatus -PackageList $packages
+            Update-StateAfterAction -State $state -Action 'remove' -PackageList $packages
+            Save-InstallerState -State $state
+
+            Write-Host ''
+            Write-Host 'Press any key to return to main menu...' -ForegroundColor Yellow
+            $null = $host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+        }
+        '3' {
+            Clear-Host
+            Refresh-PackageInstallStatus -PackageList $packages
+            Invoke-UpdateAllInstalled -PackageList $packages
+            Refresh-PackageInstallStatus -PackageList $packages
+            Update-StateAfterAction -State $state -Action 'update-all' -PackageList $packages
+            Save-InstallerState -State $state
+
+            Write-Host ''
+            Write-Host 'Press any key to return to main menu...' -ForegroundColor Yellow
+            $null = $host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+        }
+        '4' {
+            Refresh-PackageInstallStatus -PackageList $packages
+        }
+        '5' {
+            Write-Host 'Exiting.' -ForegroundColor Yellow
+            break
+        }
+        default {
+            Write-Host 'Invalid choice. Use 1-5.' -ForegroundColor Red
+            Start-Sleep -Seconds 1
+        }
+    }
+}
