@@ -20,8 +20,8 @@ Since you already have FTP credentials from another project, you need to add the
    - Click "New repository secret"
    - Name: `FTP_SERVER`
    - Secret: Your FTP server - **JUST the hostname or IP, NO protocol prefix**
-     - ✅ Correct: `fons.lv` or `45.84.207.147`
-     - ❌ Wrong: `ftp://fons.lv` or `ftp://45.84.207.147`
+     - ✅ Correct: `fons.lv` or `your-server-ip`
+     - ❌ Wrong: `ftp://fons.lv` or `ftp://your-server-ip`
    - Click "Add secret"
 
    **Secret 2: FTP_USERNAME**
