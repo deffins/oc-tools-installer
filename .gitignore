@@ -20,5 +20,8 @@ $RECYCLE.BIN/
 # Environment files (contains FTP credentials)
 .env
 
+# Claude Code local settings
+.claude/
+
 # FTP deployment state
 .ftp-deploy-sync-state.json
